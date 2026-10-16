@@ -127,6 +127,7 @@ namespace gxvk::vk::context
         bool             samplerAnisotropy;    ///< anisotropic samplers are legal on this device
         bool             occlusionQueryPrecise; ///< VK_QUERY_CONTROL_PRECISE_BIT is legal: exact sample counts
         bool             independentBlend;      ///< per-attachment blend state is legal
+        bool             fillModeNonSolid;      ///< a LINE polygon mode (wireframe) is legal
         const loader::Instance* iapi;
         const loader::Device*   dapi;
     };

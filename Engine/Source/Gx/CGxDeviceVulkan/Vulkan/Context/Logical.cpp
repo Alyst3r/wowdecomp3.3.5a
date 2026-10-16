@@ -82,6 +82,10 @@ namespace gxvk::vk::context::detail
             // independentBlend: per-attachment blend state, for a multi-attachment pass class.
             features.independentBlend = have.independentBlend;
             g.independentBlend        = have.independentBlend == VK_TRUE;
+            // fillModeNonSolid: the engine's wireframe (GxMasterEnable_PolygonFill off) is a LINE
+            // polygon mode, legal only with the feature; without it such a draw stays filled.
+            features.fillModeNonSolid = have.fillModeNonSolid;
+            g.wireframe               = have.fillModeNonSolid == VK_TRUE;
             if (!g.bc)
                 Write(Warn, "vulkan: the adapter has no textureCompressionBC; DXT textures are decoded to RGBA8, four to eight times larger");
             if (!g.preciseOcclusion)

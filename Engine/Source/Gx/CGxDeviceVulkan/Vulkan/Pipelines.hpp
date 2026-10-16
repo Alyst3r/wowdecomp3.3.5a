@@ -29,8 +29,9 @@ namespace gxvk::vk::manifest { struct Record; }
 //                                      translated vertex module drawn with no pixel shader
 //
 // A pipeline is built for each distinct combination of vertex layout, programs (and records),
-// topology, blend mode, sampler-slot set and render pass, on first use, and kept for the device's
-// life. Everything is Vulkan 1.0 core.
+// topology, blend mode, depth and culling state, colour write mask, fill mode, sampler-slot set and
+// render pass, on first use, and kept for the device's life. The viewport, the scissor, the depth
+// bias and the blend constants are dynamic. Everything is Vulkan 1.0 core.
 namespace gxvk::vk::pipelines
 {
     /// Streams one draw may bind: one per distinct buffer of the engine's attribute table.
@@ -108,6 +109,23 @@ namespace gxvk::vk::pipelines
 
         uint32_t topology = 3;       ///< EGxPrim
         uint32_t blend    = 0;       ///< EGxBlend
+
+        /// The render states that shape the pipeline, as D3D9 would see them after the master
+        /// enables: the depth test (its compare op by the engine's GxRs_DepthFunc value: 0
+        /// LESS_OR_EQUAL, 1 EQUAL, 2 GREATER_OR_EQUAL, 3 LESS), the depth write, the culling (0
+        /// none, 1 the clockwise face, 2 the counter-clockwise face), the colour write mask (R 1, G
+        /// 2, B 4, A 8), the fill mode.
+        bool     depthTest  = false;
+        bool     depthWrite = false;
+        uint32_t depthFunc  = 0;
+        uint32_t cull       = 0;
+        uint32_t colourMask = 0xF;
+        bool     wireframe  = false;
+
+        /// The dynamic states: D3D9's DEPTHBIAS, as Vulkan's constant depth bias factor (units of
+        /// the depth buffer's smallest step); D3D9's BLENDFACTOR, for the ConstantAlpha blend.
+        float depthBias        = 0.0f;
+        float blendConstant[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
         VertexProgram           vertex         = VertexProgram::FixedFunction;
         FragmentProgram         fragment       = FragmentProgram::FixedFunction;

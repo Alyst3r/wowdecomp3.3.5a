@@ -73,6 +73,7 @@ namespace gxvk::vk::context::detail
         bool               anisotropy  = false; ///< samplerAnisotropy was enabled on the device
         bool               preciseOcclusion = false; ///< occlusionQueryPrecise was enabled on the device
         bool               independentBlend = false; ///< independentBlend was enabled: per-attachment blend state
+        bool               wireframe   = false; ///< fillModeNonSolid was enabled: a LINE polygon mode is legal
 
         bool vsync            = true;  ///< the engine's format asks for vsync (SetVsync)
         bool validationWanted = false; ///< SetValidation: ask for the Khronos validation layer

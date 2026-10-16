@@ -1,7 +1,7 @@
 // The Vulkan backend's draw: the engine's vertex streams, index buffer, batch, transforms, texture
-// stage 0, blend mode, alpha test and shaders read off the device at Draw time and recorded into the
-// frame's render pass; the D3D placement of the viewport and scissor; the projection in D3D's depth
-// range.
+// stages, blend mode, alpha test, depth and culling states, colour mask, fill mode, depth bias and
+// shaders read off the device at Draw time and recorded into the frame's render pass; the D3D
+// placement of the viewport and scissor; the projection in D3D's depth range.
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -76,10 +76,11 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
         return;
     }
 
-    // With a texture bound as the render target the draw belongs to that texture, not to the
-    // swapchain image; rendering into a texture is not implemented, so the draw is dropped rather
-    // than painted over the frame. The target samples as what it was born with (transparent black).
-    if (this->m_textureTarget[0].m_texture || this->m_textureTarget[1].m_texture) {
+    // A colour target the frame could not take (a texture without an image: a format the device
+    // cannot render into) drops its draws rather than painting them over the scene.
+    CGxTex* colourTarget = this->m_textureTarget[GxBuffers_Color].m_texture;
+
+    if (colourTarget && !frame::Target()) {
         return;
     }
 
@@ -87,6 +88,11 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
     // be the frame the draw is recorded in.
     if (!frame::Pass()) {
         return;
+    }
+
+    // The target's image is named by this frame: it outlives the frame's GPU work.
+    if (colourTarget) {
+        this->ITexTouch(colourTarget);
     }
 
     pipelines::Draw d;
@@ -169,6 +175,7 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
     d.count = batch->m_count;
     d.topology = batch->m_primType;
     d.blend = this->m_appRenderStates[GxRs_BlendingMode].m_value.m_data.i[0];
+    this->IRenderStates(d);
 
     // The constant registers, then the programs (which read them for their transform) and the
     // texture stages they sample.
@@ -232,6 +239,49 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
     if (indexBuf) {
         this->INoteBufDrawn(indexBuf);
     }
+}
+
+// The render states as CGxDeviceD3d::IRsSendToHw (0x006A4C30) sends them, each under its master
+// enable: the depth function (ALWAYS when the test is off), the depth write, the colour write mask,
+// the culling (clamped to the table's three entries), the fill mode, D3D's DEPTHBIAS (the negated
+// GxRs_PolygonOffset, a depth-range value, scaled to the depth buffer's step) and D3D's BLENDFACTOR
+// (the Unk84 value replicated to every channel).
+void CGxDeviceVulkan::IRenderStates(pipelines::Draw& d) {
+    const uint32_t master = this->m_appMasterEnables;
+
+    d.depthTest = (master & (1 << GxMasterEnable_DepthTest)) && this->m_appRenderStates[GxRs_DepthTest].m_value.m_data.i[0];
+    d.depthFunc = static_cast<uint32_t>(this->m_appRenderStates[GxRs_DepthFunc].m_value.m_data.i[0]);
+    d.depthWrite = (master & (1 << GxMasterEnable_DepthWrite)) && this->m_appRenderStates[GxRs_DepthWrite].m_value.m_data.i[0];
+    d.colourMask = (master & (1 << GxMasterEnable_ColorWrite)) ? this->m_appRenderStates[GxRs_ColorWrite].m_value.m_data.u[0] : 0u;
+    d.wireframe = !(master & (1 << GxMasterEnable_PolygonFill));
+
+    uint32_t cull = 0;
+
+    if (master & (1 << GxMasterEnable_Culling)) {
+        const int32_t value = this->m_appRenderStates[GxRs_Culling].m_value.m_data.i[0];
+        cull = value < 0 ? 0u : (value > 2 ? 2u : static_cast<uint32_t>(value));
+    }
+
+    d.cull = cull;
+
+    if (this->m_caps.m_depthBias) {
+        float step;
+
+        switch (frame::DepthFormat()) {
+            case VK_FORMAT_D16_UNORM:  step = 65536.0f;    break;
+            case VK_FORMAT_D32_SFLOAT: step = 8388608.0f;  break;
+            default:                   step = 16777216.0f; break;
+        }
+
+        d.depthBias = -this->m_appRenderStates[GxRs_PolygonOffset].m_value.m_data.f[0] * step;
+    }
+
+    const float factor = this->m_appRenderStates[Unk84].m_value.m_data.f[0];
+    const float quantised = static_cast<float>(static_cast<uint32_t>(factor * 255.0f) & 0xFF) / 255.0f;
+    d.blendConstant[0] = quantised;
+    d.blendConstant[1] = quantised;
+    d.blendConstant[2] = quantised;
+    d.blendConstant[3] = quantised;
 }
 
 // The viewport and scissor D3D would set for the current state, in pixels of the frame's target:

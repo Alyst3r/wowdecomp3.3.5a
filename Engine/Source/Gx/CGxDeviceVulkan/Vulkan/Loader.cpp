@@ -313,6 +313,7 @@ namespace gxvk::vk::loader
         GXVK_DEVICE_PROC(CmdCopyImage);
         GXVK_DEVICE_PROC(CmdCopyImageToBuffer);
         GXVK_DEVICE_PROC(CreateQueryPool);
+        GXVK_DEVICE_PROC(DestroyQueryPool);
         GXVK_DEVICE_PROC(CmdResetQueryPool);
         GXVK_DEVICE_PROC(CmdBeginQuery);
         GXVK_DEVICE_PROC(CmdEndQuery);

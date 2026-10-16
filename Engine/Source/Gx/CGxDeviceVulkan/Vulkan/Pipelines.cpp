@@ -59,6 +59,7 @@ namespace gxvk::vk::pipelines
         h->iapi->GetPhysicalDeviceProperties(h->physical, &props);
         s.anisoMax  = h->samplerAnisotropy ? props.limits.maxSamplerAnisotropy : 1.0f;
         s.regsAlign = props.limits.minUniformBufferOffsetAlignment ? static_cast<uint32_t>(props.limits.minUniformBufferOffsetAlignment) : 256u;
+        s.wireframe = h->fillModeNonSolid;
         if (props.limits.maxUniformBufferRange < kSliceBytesLarge)
         {
             Write(Error, "vulkan: pipelines: maxUniformBufferRange %u cannot hold a %u-byte slice; declining", props.limits.maxUniformBufferRange, kSliceBytesLarge);
@@ -180,6 +181,12 @@ namespace gxvk::vk::pipelines
             if (draw.attribMask & (1u << a)) k.attribs[a] = draw.attribs[a];
         k.topology       = draw.topology;
         k.blend          = draw.blend;
+        k.depthTest      = draw.depthTest ? 1u : 0u;
+        k.depthWrite     = draw.depthWrite ? 1u : 0u;
+        k.depthFunc      = draw.depthFunc;
+        k.cull           = draw.cull;
+        k.colourMask     = draw.colourMask & 0xFu;
+        k.wireframe      = (draw.wireframe && s.wireframe) ? 1u : 0u;
         k.vertex         = static_cast<uint32_t>(draw.vertex);
         k.fragment       = static_cast<uint32_t>(draw.fragment);
         k.vertexRecord   = draw.vertex == VertexProgram::Translated ? manifest::IndexOf(draw.vertexRecord) : manifest::kNoRecord;
@@ -293,6 +300,19 @@ namespace gxvk::vk::pipelines
             b.scissor = draw.scissor;
         }
         b.placed = true;
+
+        if (!b.biasSet || b.depthBias != draw.depthBias)
+        {
+            d.CmdSetDepthBias(cmd, draw.depthBias, 0.0f, 0.0f);
+            b.depthBias = draw.depthBias;
+            b.biasSet   = true;
+        }
+        if (!b.blendSet || std::memcmp(b.blendConstant, draw.blendConstant, sizeof draw.blendConstant) != 0)
+        {
+            d.CmdSetBlendConstants(cmd, draw.blendConstant);
+            std::memcpy(b.blendConstant, draw.blendConstant, sizeof b.blendConstant);
+            b.blendSet = true;
+        }
 
         float push[kPushBytes / sizeof(float)];
         std::memcpy(push, draw.xform, sizeof draw.xform);

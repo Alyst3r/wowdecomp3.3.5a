@@ -72,11 +72,10 @@ namespace gxvk::vk::frame
     VkCommandBuffer Outside()
     {
         if (!EnsureFrame()) return nullptr;
-        if (s.passOpen)
-        {
-            EndPass();
-            s.resume = true;
-        }
+        // An active query pins the pass: the transfer goes ahead of the frame instead.
+        if (s.passOpen && s.queryActive) return s.slots[s.fi].pre;
+        // The next Pass() reopens on the same target with its contents loaded.
+        if (s.passOpen) EndPass();
         return s.slots[s.fi].cmd;
     }
 

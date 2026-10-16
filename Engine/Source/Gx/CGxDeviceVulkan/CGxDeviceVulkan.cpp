@@ -1,8 +1,9 @@
-// The Vulkan backend: construction, the device lifecycle (create, set format, destroy) and the
-// crash-log lines. The window is CGxDeviceVulkanWindow.cpp, the caps CGxDeviceVulkanCaps.cpp, the
-// frame CGxDeviceVulkanScene.cpp, the pools CGxDeviceVulkanPool.cpp, the textures
-// CGxDeviceVulkanTexture.cpp, the shaders CGxDeviceVulkanShader.cpp, the draw CGxDeviceVulkanDraw.cpp,
-// the rest CGxDeviceVulkanStubs.cpp.
+// The Vulkan backend: construction, the device lifecycle (create, set format, destroy), the gamma
+// ramp and the crash-log lines. The window is CGxDeviceVulkanWindow.cpp, the caps
+// CGxDeviceVulkanCaps.cpp, the frame CGxDeviceVulkanScene.cpp, the pools CGxDeviceVulkanPool.cpp,
+// the textures CGxDeviceVulkanTexture.cpp, the shaders CGxDeviceVulkanShader.cpp, the draw
+// CGxDeviceVulkanDraw.cpp, the render targets CGxDeviceVulkanTarget.cpp, the queries
+// CGxDeviceVulkanQuery.cpp, the cursor CGxDeviceVulkanCursor.cpp, the rest CGxDeviceVulkanStubs.cpp.
 #include <cstdint>
 #include <cstring>
 #include <new>
@@ -12,6 +13,8 @@
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Manifest.hpp"
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Memory.hpp"
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Pipelines.hpp"
+#include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Present.hpp"
+#include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Queries.hpp"
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Shaders.hpp"
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Texture.hpp"
 #include "Engine/Source/Gx/CGxPool.h"
@@ -24,6 +27,8 @@ namespace frame     = gxvk::vk::frame;
 namespace manifest  = gxvk::vk::manifest;
 namespace memory    = gxvk::vk::memory;
 namespace pipelines = gxvk::vk::pipelines;
+namespace present   = gxvk::vk::present;
+namespace queries   = gxvk::vk::queries;
 namespace shaders   = gxvk::vk::shaders;
 namespace texture   = gxvk::vk::texture;
 
@@ -51,6 +56,8 @@ CGxDeviceVulkan::CGxDeviceVulkan() {
     this->m_drawPath = 0;
     this->m_filling = nullptr;
     this->m_manifestTried = 0;
+    this->m_hcursor = nullptr;
+    this->m_hwCursorDirty = 0;
     // D3D's constant registers start at zero.
     memset(this->m_vertexRegs, 0, sizeof(this->m_vertexRegs));
     memset(this->m_pixelRegs, 0, sizeof(this->m_pixelRegs));
@@ -217,10 +224,10 @@ int32_t CGxDeviceVulkan::ICreateVulkan(const CGxFormat& format) {
     return 1;
 }
 
-// Device memory, the textures, the translated shaders' manifest and modules, and the pipelines,
-// once the VkDevice exists. Without them the pools answer locks with the engine's emergency memory,
-// the textures stay pending and the frame presents the clear colour only. The manifest is looked
-// for once per device: without it only the backend's own programs draw.
+// Device memory, the textures, the translated shaders' manifest and modules, the pipelines, the
+// present pass and the queries, once the VkDevice exists. Without them the pools answer locks with
+// the engine's emergency memory, the textures stay pending and nothing reaches the window. The
+// manifest is looked for once per device: without it only the backend's own programs draw.
 void CGxDeviceVulkan::ICreateDrawPath() {
     if (this->m_drawPath || !context::Live()) {
         return;
@@ -234,10 +241,10 @@ void CGxDeviceVulkan::ICreateDrawPath() {
         manifest::Load(folder);
     }
 
-    this->m_drawPath = memory::Init() && texture::Init() && shaders::Init(folder) && pipelines::Init();
+    this->m_drawPath = memory::Init() && texture::Init() && shaders::Init(folder) && pipelines::Init() && present::Init() && queries::Init();
 
     if (!this->m_drawPath) {
-        CGxDevice::Log("CGxDeviceVulkan::ICreateDrawPath(): device memory, the textures, the shaders or the pipelines could not be brought up (the lines above say why); nothing is drawn");
+        CGxDevice::Log("CGxDeviceVulkan::ICreateDrawPath(): device memory, the textures, the shaders, the pipelines, the present pass or the queries could not be brought up (the lines above say why); nothing is drawn");
     }
 }
 
@@ -276,9 +283,9 @@ void CGxDeviceVulkan::IReleaseVulkanWindow() {
 }
 
 // Everything, in reverse order of creation: the frame's swapchain objects (which waits for the
-// device), the pools' buffers and the textures' images, the frame's own objects (the retired ones
-// with them), the pipelines, the shader modules, the textures' table, device memory, the context,
-// the manifest.
+// device, and drops the present pass's framebuffers), the pools' buffers and the textures' images,
+// the frame's own objects (the retired ones with them), the pipelines, the present pass, the
+// queries, the shader modules, the textures' table, device memory, the context, the manifest.
 void CGxDeviceVulkan::IDestroyVulkan() {
     this->ICursorDestroy();
     frame::ReleaseSwapchain();
@@ -286,6 +293,8 @@ void CGxDeviceVulkan::IDestroyVulkan() {
     this->IReleaseTextures();
     frame::Destroy();
     pipelines::Shutdown();
+    present::Shutdown();
+    queries::Shutdown();
     shaders::Shutdown();
     texture::Shutdown();
     memory::Shutdown();
@@ -315,13 +324,17 @@ void* CGxDeviceVulkan::DeviceWindow() {
     return this->m_hwnd;
 }
 
-// The ramp is kept by the base and not applied: a Vulkan swapchain has no SetGammaRamp.
+// Mirrors CGxDeviceD3d::DeviceSetGamma (0x0068E4C0 / 0x0069FE80): the base keeps the ramp; the
+// present pass applies it to the frame it shows, in fullscreen only, as D3D's SetGammaRamp applies
+// to a fullscreen swap chain alone.
 void CGxDeviceVulkan::DeviceSetGamma(float gamma) {
     CGxDevice::DeviceSetGamma(gamma);
+    present::SetGamma(this->m_gammaRamp.m_red, this->m_gammaRamp.m_green, this->m_gammaRamp.m_blue, !this->IDevIsWindowed());
 }
 
 void CGxDeviceVulkan::DeviceSetGamma(const CGxGammaRamp& ramp) {
     CGxDevice::DeviceSetGamma(ramp);
+    present::SetGamma(this->m_gammaRamp.m_red, this->m_gammaRamp.m_green, this->m_gammaRamp.m_blue, !this->IDevIsWindowed());
 }
 
 // Mirrors CGxDeviceD3d::DeviceOverride (0x0069FF40) for the one override the shader level depends on.
@@ -355,10 +368,19 @@ void CGxDeviceVulkan::LogCrashInfo(char* buffer, uint32_t size) {
     pipelines::GetStats(p);
     texture::Stats t;
     texture::GetStats(t);
-    SStrPrintf(line, sizeof(line), "Frames: %llu submitted, %llu presented, %llu passes (%llu resumed); draws: %llu drawn, %llu skipped, %u pipeline(s), %u sampler(s)\r\n",
+    SStrPrintf(line, sizeof(line), "Frames: %llu submitted, %llu presented, %llu passes (%llu resumed, %llu on render targets); draws: %llu drawn, %llu skipped, %u pipeline(s), %u sampler(s)\r\n",
                static_cast<unsigned long long>(f.frames), static_cast<unsigned long long>(f.presented),
                static_cast<unsigned long long>(f.passes), static_cast<unsigned long long>(f.passResumes),
+               static_cast<unsigned long long>(f.targetPasses),
                static_cast<unsigned long long>(p.drawn), static_cast<unsigned long long>(p.skipped), p.pipelines, p.samplers);
+    SStrPack(buffer, line, size);
+
+    queries::Stats q;
+    queries::GetStats(q);
+    SStrPrintf(line, sizeof(line), "Targets: %u depth buffer(s), %u framebuffer(s), %llu scene copies, %llu scene reads; queries: %llu begun, %llu ended, %llu read (%llu waited, %llu flushed), %llu cut by a pass end\r\n",
+               f.depthBuffers, f.framebuffers, static_cast<unsigned long long>(f.sceneCopies), static_cast<unsigned long long>(f.sceneReads),
+               static_cast<unsigned long long>(q.begun), static_cast<unsigned long long>(q.ended), static_cast<unsigned long long>(q.results),
+               static_cast<unsigned long long>(q.waits), static_cast<unsigned long long>(q.flushes), static_cast<unsigned long long>(f.queriesCut));
     SStrPack(buffer, line, size);
     SStrPrintf(line, sizeof(line), "Textures: %u image(s) live (peak %u), %llu region(s) uploaded in %llu batch(es), %llu MiB staged\r\n",
                t.live, t.livePeak, static_cast<unsigned long long>(t.regions), static_cast<unsigned long long>(t.batches),

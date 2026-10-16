@@ -16,14 +16,6 @@ namespace {
         const VkFormatFeatureFlags need = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
         return (props.optimalTilingFeatures & need) == need;
     }
-
-    /// True when the format can be a sampled depth attachment with optimal tiling.
-    bool RenderableDepth(const context::Handles& h, VkFormat format) {
-        VkFormatProperties props = {};
-        h.iapi->GetPhysicalDeviceFormatProperties(h.physical, format, &props);
-        const VkFormatFeatureFlags need = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-        return (props.optimalTilingFeatures & need) == need;
-    }
 }
 
 // The counterpart of CGxDeviceD3d::ISetCaps (0x0068EE20). The constants are what that function
@@ -80,8 +72,9 @@ void CGxDeviceVulkan::ISetCaps(const CGxFormat& format) {
 
     // Render-target formats: what a VkImage of the matching format can be, asked of the adapter the
     // way D3D asks CheckDeviceFormat. Argb8888 is stored B8G8R8A8 (the back buffer's own), Rgb565
-    // R5G6B5, Gr1616F R16G16_SFLOAT, R32F R32_SFLOAT; the depth texture is D24S8, or D32 where D24S8
-    // is not offered (AMD).
+    // R5G6B5, Gr1616F R16G16_SFLOAT, R32F R32_SFLOAT. D24X8 is not offered: every colour target gets
+    // the frame's own depth buffer, and a depth texture cannot be sampled here, so the shadow cache
+    // takes its R32F colour-target path (its PCF path wants the D24X8 texture).
     for (uint32_t i = 0; i < GxTexFormats_Last; i++) {
         this->m_caps.m_rttFormat[i] = 0;
     }
@@ -91,14 +84,14 @@ void CGxDeviceVulkan::ISetCaps(const CGxFormat& format) {
         this->m_caps.m_rttFormat[GxTex_Rgb565] = RenderableColour(*h, VK_FORMAT_R5G6B5_UNORM_PACK16);
         this->m_caps.m_rttFormat[GxTex_Gr1616F] = RenderableColour(*h, VK_FORMAT_R16G16_SFLOAT);
         this->m_caps.m_rttFormat[GxTex_R32F] = RenderableColour(*h, VK_FORMAT_R32_SFLOAT);
-        this->m_caps.m_rttFormat[GxTex_D24X8] = RenderableDepth(*h, VK_FORMAT_D24_UNORM_S8_UINT) || RenderableDepth(*h, VK_FORMAT_D32_SFLOAT);
     } else {
         this->m_caps.m_rttFormat[GxTex_Argb8888] = 1;
         this->m_caps.m_rttFormat[GxTex_Rgb565] = 1;
         this->m_caps.m_rttFormat[GxTex_Gr1616F] = 1;
         this->m_caps.m_rttFormat[GxTex_R32F] = 1;
-        this->m_caps.m_rttFormat[GxTex_D24X8] = 1;
     }
+
+    this->m_caps.m_rttFormat[GxTex_D24X8] = 0;
 
     // Shader levels: vs_3_0 and ps_3_0, the profiles the client runs on D3D9, so the engine loads
     // the vs_3_0 / ps_3_0 .bls records. The format's fixed-function caps lower a level as on D3D.
@@ -139,13 +132,12 @@ void CGxDeviceVulkan::ISetCaps(const CGxFormat& format) {
     this->m_caps.m_depthBias = 1;
     this->m_caps.m_colorWrite = 1;
 
-    // Not offered: user clip planes (the engine takes no clip-plane path with 0), the hardware cursor
-    // (with 0 the engine draws its software cursor through Draw, and the window class's cursor shows
-    // over the client area), occlusion queries (with 0 the sun glare does not ask), multisampling
-    // (the device renders single-sampled).
+    // The hardware cursor (a Win32 cursor from the engine's image) and occlusion queries (the
+    // backend's query pool) are offered; user clip planes are not (the engine takes no clip-plane
+    // path with 0: the model cache clips in software), nor multisampling (single-sampled).
     this->m_caps.m_maxClipPlanes = 0;
-    this->m_caps.m_hwCursor = 0;
-    this->m_caps.m_occlusionQuery = 0;
+    this->m_caps.m_hwCursor = 1;
+    this->m_caps.m_occlusionQuery = 1;
 
     // Points: from the device's own range, and 1.0 when large points are off.
     float maxPoint = 8192.0f;

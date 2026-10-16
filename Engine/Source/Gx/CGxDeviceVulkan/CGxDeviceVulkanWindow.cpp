@@ -189,8 +189,9 @@ void CGxDeviceVulkan::CapsWindowSizeInScreenCoords(CRect& rect) {
     }
 }
 
-// Mirrors CGxDeviceD3d::WindowProcD3d (0x006A0360), without the D3D cursor branch: the window class's
-// cursor shows over the client area.
+// Mirrors CGxDeviceD3d::WindowProcD3d (0x006A0360). Over the client area the cursor is the engine's:
+// the hardware cursor built from its image when it is on and visible, none otherwise (the software
+// cursor is drawn by the engine, or the cursor is hidden).
 LRESULT CALLBACK CGxDeviceVulkan::WindowProcVulkan(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     CGxDeviceVulkan* device = reinterpret_cast<CGxDeviceVulkan*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
 
@@ -261,6 +262,18 @@ LRESULT CALLBACK CGxDeviceVulkan::WindowProcVulkan(HWND hwnd, UINT message, WPAR
 
         case WM_ERASEBKGND:
             return 0;
+
+        case WM_SETCURSOR:
+            if (!device) {
+                return DefWindowProcA(hwnd, message, wparam, lparam);
+            }
+
+            if (device->m_context && LOWORD(lparam) == HTCLIENT) {
+                SetCursor(device->m_cursorVisible && device->m_hwCursor ? device->m_hcursor : nullptr);
+                return 1;
+            }
+
+            break;
 
         case WM_DISPLAYCHANGE:
             if (!device->IDevIsWindowed()) {

@@ -73,15 +73,16 @@ namespace gxvk::vk::frame::detail
                 return false;
             }
         }
-        return true;
+        return ChooseDepthFormat(h);
     }
 
-    /// The slots (their staging rings included), the render passes and the pool. The caller has
-    /// waited for the device and dropped the image objects.
+    /// The slots (their staging rings included), the targets and the pool. The caller has waited
+    /// for the device and dropped the image objects.
     void DestroyDeviceObjects()
     {
         if (!s.dapi || !s.device) return;
         const loader::Device& d = *s.dapi;
+        DestroyTargets();
         for (FrameSlot& slot : s.slots)
         {
             StagingDestroy(slot);
@@ -89,11 +90,6 @@ namespace gxvk::vk::frame::detail
             if (slot.fence != VK_NULL_HANDLE) d.DestroyFence(s.device, slot.fence, nullptr);
             slot = FrameSlot();
         }
-        if (s.pass != VK_NULL_HANDLE) d.DestroyRenderPass(s.device, s.pass, nullptr);
-        if (s.passResume != VK_NULL_HANDLE) d.DestroyRenderPass(s.device, s.passResume, nullptr);
-        s.pass       = VK_NULL_HANDLE;
-        s.passResume = VK_NULL_HANDLE;
-        s.passFormat = VK_FORMAT_UNDEFINED;
         // vkDestroyCommandPool frees every buffer allocated from the pool.
         if (s.pool != VK_NULL_HANDLE) d.DestroyCommandPool(s.device, s.pool, nullptr);
         s.pool = VK_NULL_HANDLE;
@@ -109,11 +105,15 @@ namespace gxvk::vk::frame::detail
                 s.completed = slot.serial;
     }
 
-    /// Destroys what a retired entry holds: its buffer or its image.
+    /// Destroys what a retired entry holds.
     static void DestroyRetired(Retired& e)
     {
         memory::DestroyBuffer(e.buffer);
         texture::DestroyIdle(e.image);
+        if (e.framebuffer != VK_NULL_HANDLE) s.dapi->DestroyFramebuffer(s.device, e.framebuffer, nullptr);
+        if (e.view != VK_NULL_HANDLE) s.dapi->DestroyImageView(s.device, e.view, nullptr);
+        if (e.rawImage != VK_NULL_HANDLE) s.dapi->DestroyImage(s.device, e.rawImage, nullptr);
+        memory::Free(e.rawBlock);
         ++s.stats.retired;
     }
 

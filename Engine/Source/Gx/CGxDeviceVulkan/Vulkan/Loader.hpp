@@ -231,6 +231,7 @@ namespace gxvk::vk::loader
         PFN_vkCmdCopyImage               CmdCopyImage               = nullptr;
         PFN_vkCmdCopyImageToBuffer       CmdCopyImageToBuffer       = nullptr;
         PFN_vkCreateQueryPool            CreateQueryPool            = nullptr;
+        PFN_vkDestroyQueryPool           DestroyQueryPool           = nullptr;
         PFN_vkCmdResetQueryPool          CmdResetQueryPool          = nullptr;
         PFN_vkCmdBeginQuery              CmdBeginQuery              = nullptr;
         PFN_vkCmdEndQuery                CmdEndQuery                = nullptr;

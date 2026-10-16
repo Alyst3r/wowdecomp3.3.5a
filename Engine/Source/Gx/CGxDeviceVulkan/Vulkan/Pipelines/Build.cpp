@@ -20,9 +20,10 @@ namespace
      *   6 ModAdd        DSTCOLOR / ONE
      *
      * The same factors for alpha as for colour, op ADD on both: D3D9 with SEPARATEALPHABLENDENABLE
-     * off, which the engine never turns on. 11 reads the blend constants, left at Vulkan's default.
+     * off, which the engine never turns on. 11 reads the blend constants, which the draw sets
+     * (D3D9's BLENDFACTOR). The write mask is the key's colour mask.
      */
-    bool BlendState(uint32_t blend, VkPipelineColorBlendAttachmentState& a)
+    bool BlendState(uint32_t blend, uint32_t colourMask, VkPipelineColorBlendAttachmentState& a)
     {
         a.blendEnable  = VK_TRUE;
         a.colorBlendOp = VK_BLEND_OP_ADD;
@@ -51,8 +52,41 @@ namespace
         a.dstColorBlendFactor = dst;
         a.srcAlphaBlendFactor = src;
         a.dstAlphaBlendFactor = dst;
-        a.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        // The engine's GxRs_ColorWrite bits are D3D9's D3DCOLORWRITEENABLE_RED (1), GREEN (2),
+        // BLUE (4), ALPHA (8): the same bits as VkColorComponentFlagBits.
+        a.colorWriteMask      = colourMask & 0xFu;
         return true;
+    }
+
+    /// The compare op of the engine's GxRs_DepthFunc value (CGxDeviceD3d::s_cmpFunc).
+    bool DepthOp(uint32_t func, VkCompareOp& out)
+    {
+        switch (func)
+        {
+            case 0: out = VK_COMPARE_OP_LESS_OR_EQUAL;    return true;
+            case 1: out = VK_COMPARE_OP_EQUAL;            return true;
+            case 2: out = VK_COMPARE_OP_GREATER_OR_EQUAL; return true;
+            case 3: out = VK_COMPARE_OP_LESS;             return true;
+            default: return false;
+        }
+    }
+
+    /**
+     * The cull mode of the engine's GxRs_Culling value under the master enable
+     * (CGxDeviceD3d::s_cullMode: NONE, CW, CCW). The draw's clip-space y is negated for Vulkan and
+     * both APIs put window y downwards, so a triangle's window-space winding is the same under
+     * both: with the pipeline's front face CLOCKWISE, D3D's "cull clockwise" is cull FRONT and its
+     * "cull counter-clockwise" is cull BACK.
+     */
+    bool CullMode(uint32_t cull, VkCullModeFlags& out)
+    {
+        switch (cull)
+        {
+            case 0: out = VK_CULL_MODE_NONE;      return true;
+            case 1: out = VK_CULL_MODE_FRONT_BIT; return true;
+            case 2: out = VK_CULL_MODE_BACK_BIT;  return true;
+            default: return false;
+        }
     }
 
     /// An EGxPrim as a Vulkan topology (CGxDeviceD3d::s_primitiveConversion).
@@ -291,16 +325,18 @@ namespace
      *
      * The vertex input has one binding per stream at the key's stride, plus the constant stream
      * at binding streamCount with stride 0 when a program reads an element the vertex lacks.
-     * Viewport and scissor are dynamic; no culling, no depth (the pass has no depth attachment),
-     * one sample.
+     * Viewport, scissor, depth bias and blend constants are dynamic; the depth test and write,
+     * the culling, the colour mask and the fill mode are the key's; one sample.
      */
     bool Build(const Key& k, VkPipeline& out)
     {
         VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         VkPipelineColorBlendAttachmentState blend = {};
-        if (!Topology(k.topology, topology) || !BlendState(k.blend, blend))
+        VkCompareOp     depthOp = VK_COMPARE_OP_ALWAYS;
+        VkCullModeFlags cull    = VK_CULL_MODE_NONE;
+        if (!Topology(k.topology, topology) || !BlendState(k.blend, k.colourMask, blend) || !DepthOp(k.depthFunc, depthOp) || !CullMode(k.cull, cull))
         {
-            Refuse(k, "the topology or the blend mode is outside the tables");
+            Refuse(k, "the topology, the blend mode, the depth function or the cull mode is outside the tables");
             return false;
         }
         const char* why = "";
@@ -371,26 +407,38 @@ namespace
         viewport.viewportCount = 1;
         viewport.scissorCount  = 1;
 
+        // The bias is always enabled and set per draw: a constant factor of 0 is no bias.
         VkPipelineRasterizationStateCreateInfo raster = {};
-        raster.sType       = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        raster.polygonMode = VK_POLYGON_MODE_FILL;
-        raster.cullMode    = VK_CULL_MODE_NONE;
-        raster.frontFace   = VK_FRONT_FACE_CLOCKWISE;
-        raster.lineWidth   = 1.0f;
+        raster.sType           = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        raster.polygonMode     = (k.wireframe && s.wireframe) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+        raster.cullMode        = cull;
+        raster.frontFace       = VK_FRONT_FACE_CLOCKWISE;
+        raster.depthBiasEnable = VK_TRUE;
+        raster.lineWidth       = 1.0f;
 
         VkPipelineMultisampleStateCreateInfo multisample = {};
         multisample.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        // A depth write without a test is D3D's ZFUNC ALWAYS with ZWRITEENABLE: Vulkan writes only
+        // when the test is enabled, so the test is on with compare ALWAYS.
+        VkPipelineDepthStencilStateCreateInfo depth = {};
+        depth.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depth.depthTestEnable  = (k.depthTest || k.depthWrite) ? VK_TRUE : VK_FALSE;
+        depth.depthWriteEnable = k.depthWrite ? VK_TRUE : VK_FALSE;
+        depth.depthCompareOp   = k.depthTest ? depthOp : VK_COMPARE_OP_ALWAYS;
+        depth.minDepthBounds   = 0.0f;
+        depth.maxDepthBounds   = 1.0f;
 
         VkPipelineColorBlendStateCreateInfo blending = {};
         blending.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         blending.attachmentCount = 1;
         blending.pAttachments    = &blend;
 
-        const VkDynamicState dynamics[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        const VkDynamicState dynamics[4] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_BLEND_CONSTANTS };
         VkPipelineDynamicStateCreateInfo dynamic = {};
         dynamic.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamic.dynamicStateCount = 2;
+        dynamic.dynamicStateCount = 4;
         dynamic.pDynamicStates    = dynamics;
 
         VkGraphicsPipelineCreateInfo info = {};
@@ -402,6 +450,7 @@ namespace
         info.pViewportState      = &viewport;
         info.pRasterizationState = &raster;
         info.pMultisampleState   = &multisample;
+        info.pDepthStencilState  = &depth;
         info.pColorBlendState    = &blending;
         info.pDynamicState       = &dynamic;
         info.layout              = s.layouts[k.layoutIndex].layout;

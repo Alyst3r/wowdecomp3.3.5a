@@ -235,6 +235,7 @@ namespace gxvk::vk::context
         view.samplerAnisotropy = g.anisotropy;
         view.occlusionQueryPrecise = g.preciseOcclusion;
         view.independentBlend      = g.independentBlend;
+        view.fillModeNonSolid      = g.wireframe;
         view.iapi           = &g.iapi;
         view.dapi           = &g.dapi;
         return &view;

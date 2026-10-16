@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Vk.hpp"
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Pipelines.hpp"
+#include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Texture.hpp"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
 #include "Engine/Source/Storm/H/stpl.h"
 
@@ -20,11 +21,15 @@
 // shader as the SPIR-V module Tools/VulkanShaders translated from its bytecode, found by the md5 of
 // the code through the manifest beside the executable -- a shader without one stays invalid so the
 // engine takes its fixed-function paths (CGxDeviceVulkanShader.cpp); every Draw recorded into the
-// frame's render pass with its texture stages, constant registers, the blend mode, the alpha test
-// and the stage-0 colour ops (CGxDeviceVulkanDraw.cpp); the engine's SceneClear as the pass's clear.
-// The remaining render states (depth, culling, fog, lighting), render targets as targets, queries,
-// gamma and the hardware cursor are not implemented: those virtuals keep the engine's bookkeeping
-// (the base class) and do nothing on the device (CGxDeviceVulkanStubs.cpp).
+// frame's render pass with its texture stages, constant registers, the blend mode, the alpha test,
+// the stage-0 colour ops, the depth test and write, the culling, the colour mask, the fill mode and
+// the depth bias (CGxDeviceVulkanDraw.cpp); the engine's SceneClear as the pass's clear; the
+// engine's render targets as the frame's targets, with the back-buffer copies and the screenshot
+// read-back off the scene image (CGxDeviceVulkanTarget.cpp); occlusion queries on a query pool
+// (CGxDeviceVulkanQuery.cpp); the gamma ramp applied by the present pass; the hardware cursor as a
+// Win32 cursor built from the engine's cursor image (CGxDeviceVulkanCursor.cpp). Fixed-function
+// lighting and fog, user clip planes, multisampling and stereo are not offered (the caps say so),
+// and their virtuals keep the engine's bookkeeping only (CGxDeviceVulkanStubs.cpp).
 class CGxDeviceVulkan : public CGxDevice {
     public:
     HWND m_hwnd;
@@ -47,8 +52,17 @@ class CGxDeviceVulkan : public CGxDevice {
     // and persist across the shadow's per-present clear as D3D's registers do.
     float m_vertexRegs[256 * 4];
     float m_pixelRegs[256 * 4];
+    // The hardware cursor: a Win32 cursor built from the engine's 32x32 cursor image, remade when
+    // the image changes (CursorUnlock), shown over the client area by WM_SETCURSOR.
+    HCURSOR m_hcursor;
+    int32_t m_hwCursorDirty;
 
     virtual void ITexMarkAsUpdated(CGxTex* texId);
+    virtual void ICursorCreate(const CGxFormat& format);
+    virtual void ICursorDestroy();
+    virtual void ICursorDraw();
+    virtual void CursorSetVisible(int32_t visible);
+    virtual void CursorUnlock(uint32_t x, uint32_t y);
     virtual void IRsSendToHw(EGxRenderState which);
     virtual ~CGxDeviceVulkan();
     virtual int32_t DeviceCreate(GxWindowProc windowProc, const CGxFormat& format);
@@ -131,7 +145,14 @@ class CGxDeviceVulkan : public CGxDevice {
     void ITexUpload(CGxTex* texId);
     void ITexForceRecreation(int32_t all);
     int32_t ITexResolve(CGxTex* texId, uint32_t stage, gxvk::vk::pipelines::Draw& draw);
+    gxvk::vk::texture::Image* ITexImage(CGxTex* texId);
+    void ITexTouch(CGxTex* texId);
     void IReleaseTextures();
+    // CGxDeviceVulkanTarget.cpp: the render targets, the back-buffer copies, the read-back
+    int32_t ITargetImage(CGxTex* texId, gxvk::vk::texture::Image*& image, uint32_t plane, uint32_t& layer);
+    // CGxDeviceVulkanCursor.cpp: the hardware cursor
+    void ICursorApply();
+    int32_t ICursorInClient();
     // CGxDeviceVulkanShader.cpp: the engine's shaders as the backend's own or translated programs
     void IShaderFolder(char* folder, size_t size);
     void IShaderConstantsFlush();
@@ -139,6 +160,7 @@ class CGxDeviceVulkan : public CGxDevice {
     // CGxDeviceVulkanDraw.cpp: the draw
     int32_t IPlaceD3d(VkViewport& viewport, VkRect2D& scissor);
     void IModelViewProj(float out[16]);
+    void IRenderStates(gxvk::vk::pipelines::Draw& draw);
 };
 
 CGxDevice* CreateCGxDeviceVulkan();

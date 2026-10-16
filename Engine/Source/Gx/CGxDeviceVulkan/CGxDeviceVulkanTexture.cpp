@@ -13,8 +13,8 @@
 // The image's format is the texture's DATA format (what the callback delivers), so no conversion is
 // needed: BC kept when the device has textureCompressionBC, decoded to RGBA8 when Vulkan 1.0 has no
 // byte-identical format (Argb4444) or the device cannot sample the format. A render target gets an
-// image of its storage format with COLOR_ATTACHMENT usage, born transparent black; rendering into it
-// is not implemented yet, so it samples as what it was born with. D24X8 depth textures get no image.
+// image of its storage format with COLOR_ATTACHMENT usage, born transparent black, which the frame
+// draws into when the engine binds it (CGxDeviceVulkanTarget.cpp). D24X8 depth textures get no image.
 //
 // THE TRANSFER RULE: a fill of an image that nothing in this frame's main command buffer has named
 // yet (no draw sampled it, no fill was recorded inline) is recorded into the frame's PRE-PASS buffer,
@@ -607,7 +607,8 @@ void CGxDeviceVulkan::TexDestroy(CGxTex* texId) {
 
 // One texture stage of a draw: the bind-time update CGxDeviceD3d::ISetTexture (0x006A4900)
 // performs, then the image and sampler key into the draw's stage, the image stamped with this
-// frame. False when the texture has no image: the stage stays unbound.
+// frame. False when the texture has no image, or is the target the draw lands on (an image cannot
+// be sampled while it is the attachment): the stage stays unbound.
 int32_t CGxDeviceVulkan::ITexResolve(CGxTex* texId, uint32_t stage, pipelines::Draw& draw) {
     if (!texId || stage >= pipelines::kTextureStages) {
         return 0;
@@ -617,7 +618,7 @@ int32_t CGxDeviceVulkan::ITexResolve(CGxTex* texId, uint32_t stage, pipelines::D
 
     TexRec* r = RecOf(texId);
 
-    if (!r || r->image.handle == VK_NULL_HANDLE) {
+    if (!r || r->image.handle == VK_NULL_HANDLE || &r->image == frame::Target()) {
         return 0;
     }
 
@@ -629,6 +630,36 @@ int32_t CGxDeviceVulkan::ITexResolve(CGxTex* texId, uint32_t stage, pipelines::D
     t.cube = r->image.cube;
     draw.textureMask |= 1u << stage;
     return 1;
+}
+
+// The texture's image, made now if the texture is pending (CGxDeviceD3d::DeviceSetRenderTarget
+// creates the texture it is handed). Null when the texture has none.
+texture::Image* CGxDeviceVulkan::ITexImage(CGxTex* texId) {
+    if (!texId || !this->m_context) {
+        return nullptr;
+    }
+
+    if (texId->m_needsCreation || !texId->m_apiSpecificData) {
+        this->ITexCreate(texId);
+    }
+
+    TexRec* r = RecOf(texId);
+
+    if (!r || r->image.handle == VK_NULL_HANDLE) {
+        return nullptr;
+    }
+
+    return &r->image;
+}
+
+// The texture's image is named by this frame's main command buffer (drawn into, copied into): its
+// retirement waits for the frame.
+void CGxDeviceVulkan::ITexTouch(CGxTex* texId) {
+    TexRec* r = texId ? RecOf(texId) : nullptr;
+
+    if (r && r->image.handle != VK_NULL_HANDLE) {
+        r->lastRef = frame::Serial();
+    }
 }
 
 // Every texture's record and image, destroyed at once: the device is idle (the caller waited for
@@ -643,6 +674,7 @@ void CGxDeviceVulkan::IReleaseTextures() {
         }
 
         if (context::Live()) {
+            frame::ForgetImage(r->image);
             texture::DestroyIdle(r->image);
         }
 

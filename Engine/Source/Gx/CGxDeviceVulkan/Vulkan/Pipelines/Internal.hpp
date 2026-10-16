@@ -122,6 +122,12 @@ namespace gxvk::vk::pipelines::detail
         uint32_t     attribMask;
         uint32_t     topology;
         uint32_t     blend;
+        uint32_t     depthTest;       ///< 0 / 1
+        uint32_t     depthWrite;      ///< 0 / 1
+        uint32_t     depthFunc;
+        uint32_t     cull;
+        uint32_t     colourMask;
+        uint32_t     wireframe;       ///< 0 / 1
         uint32_t     vertex;
         uint32_t     fragment;
         uint16_t     vertexRecord;    ///< manifest index, kNoRecord when not Translated
@@ -155,6 +161,10 @@ namespace gxvk::vk::pipelines::detail
         bool             placed   = false;
         float            push[kPushBytes / sizeof(float)] = {};
         bool             pushed   = false;
+        float            depthBias        = 0.0f;
+        bool             biasSet          = false;
+        float            blendConstant[4] = {};
+        bool             blendSet         = false;
     };
 
     struct SamplerEntry
@@ -228,6 +238,7 @@ namespace gxvk::vk::pipelines::detail
         float        anisoMax     = 1.0f;                     ///< maxSamplerAnisotropy when the feature is on, else 1
 
         uint32_t     regsAlign = 256;                         ///< minUniformBufferOffsetAlignment
+        bool         wireframe = false;                       ///< fillModeNonSolid: a LINE polygon mode is legal
 
         SlotSets       slots[frame::kFramesInFlight];
         texture::Image white;                                 ///< 1x1 opaque white, made on first need

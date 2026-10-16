@@ -1,102 +1,29 @@
-// The swapchain-derived objects: the image views, the render pass, the framebuffers, the acquire.
+// The swapchain-derived objects: the image list, the per-image views and semaphores, the scene image
+// at the swapchain's size and the present pass over them, and the acquire.
 #include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Frame/Internal.hpp"
+
+#include "Engine/Source/Gx/CGxDeviceVulkan/Vulkan/Present.hpp"
 
 namespace gxvk::vk::frame::detail
 {
-    /**
-     * One of the two render passes for a swapchain format: one colour attachment, stored, ending in
-     * PRESENT_SRC (what the present reads).
-     *
-     *   first  : CLEAR on load from UNDEFINED (the acquired image's contents are not kept). The
-     *            external dependency orders the attachment's write after the acquire: the submit
-     *            waits for the image-available semaphore at COLOR_ATTACHMENT_OUTPUT, and the
-     *            dependency makes the layout transition happen after that wait rather than at the
-     *            top of the pipe.
-     *   resume : LOAD from PRESENT_SRC, for a pass begun again after Outside() ended it in the
-     *            same frame. The dependency makes the earlier pass's stores visible to the load.
-     *
-     * The two differ only in load op and layouts, so they are compatible: one pipeline and one
-     * framebuffer serve both.
-     */
-    static bool CreatePass(VkFormat format, bool resume, VkRenderPass& out)
-    {
-        VkAttachmentDescription a = {};
-        a.format         = format;
-        a.samples        = VK_SAMPLE_COUNT_1_BIT;
-        a.loadOp         = resume ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
-        a.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-        a.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        a.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        a.initialLayout  = resume ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_UNDEFINED;
-        a.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    namespace present = gxvk::vk::present;
 
-        VkAttachmentReference colour = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-        VkSubpassDescription sub = {};
-        sub.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        sub.colorAttachmentCount = 1;
-        sub.pColorAttachments    = &colour;
-
-        VkSubpassDependency dep = {};
-        dep.srcSubpass    = VK_SUBPASS_EXTERNAL;
-        dep.dstSubpass    = 0;
-        dep.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dep.srcAccessMask = resume ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0;
-        dep.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | (resume ? VK_ACCESS_COLOR_ATTACHMENT_READ_BIT : 0);
-
-        VkRenderPassCreateInfo info = {};
-        info.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        info.attachmentCount = 1;
-        info.pAttachments    = &a;
-        info.subpassCount    = 1;
-        info.pSubpasses      = &sub;
-        info.dependencyCount = 1;
-        info.pDependencies   = &dep;
-
-        const VkResult r = s.dapi->CreateRenderPass(s.device, &info, nullptr, &out);
-        if (r != VK_SUCCESS)
-        {
-            out = VK_NULL_HANDLE;
-            Fail("vkCreateRenderPass", r);
-            return false;
-        }
-        return true;
-    }
-
-    /// The two render passes for the swapchain's format. Remade, with the generation bumped, when
-    /// the format changes; kept otherwise.
-    bool EnsurePass(VkFormat format)
-    {
-        if (s.pass != VK_NULL_HANDLE && s.passResume != VK_NULL_HANDLE && s.passFormat == format) return true;
-        const loader::Device& d = *s.dapi;
-        if (s.pass != VK_NULL_HANDLE) d.DestroyRenderPass(s.device, s.pass, nullptr);
-        if (s.passResume != VK_NULL_HANDLE) d.DestroyRenderPass(s.device, s.passResume, nullptr);
-        s.pass       = VK_NULL_HANDLE;
-        s.passResume = VK_NULL_HANDLE;
-
-        if (!CreatePass(format, false, s.pass)) return false;
-        if (!CreatePass(format, true, s.passResume))
-        {
-            d.DestroyRenderPass(s.device, s.pass, nullptr);
-            s.pass = VK_NULL_HANDLE;
-            return false;
-        }
-        s.passFormat = format;
-        ++s.passGen;
-        return true;
-    }
-
-    /// Destroys what names the swapchain. The caller has waited for the device.
+    /// Destroys what names the swapchain: the views, the semaphores, the present pass's framebuffers,
+    /// the scene image and the framebuffers over it. The caller has waited for the device.
     void DropImageObjects()
     {
         if (!s.dapi || !s.device) return;
         const loader::Device& d = *s.dapi;
+        present::Drop();
+        if (s.scene.handle != VK_NULL_HANDLE)
+        {
+            DropFramebuffersOf(s.scene.handle, false);
+            texture::DestroyIdle(s.scene);
+        }
         for (uint32_t i = 0; i < kMaxImages; ++i)
         {
-            if (s.framebuffers[i] != VK_NULL_HANDLE) d.DestroyFramebuffer(s.device, s.framebuffers[i], nullptr);
             if (s.views[i] != VK_NULL_HANDLE) d.DestroyImageView(s.device, s.views[i], nullptr);
             if (s.renderFinished[i] != VK_NULL_HANDLE) d.DestroySemaphore(s.device, s.renderFinished[i], nullptr);
-            s.framebuffers[i]   = VK_NULL_HANDLE;
             s.views[i]          = VK_NULL_HANDLE;
             s.renderFinished[i] = VK_NULL_HANDLE;
             s.imagesInFlight[i] = VK_NULL_HANDLE;
@@ -107,20 +34,21 @@ namespace gxvk::vk::frame::detail
         s.swapGen    = UINT32_MAX;
     }
 
-    /// The image list, the per-image views, framebuffers and semaphores for the swapchain that stands now.
+    /// The image list, the per-image views and semaphores, the scene image and the present pass for
+    /// the swapchain that stands now.
     bool EnsureImageObjects(const context::Handles& h)
     {
         if (s.swapGen == context::SwapchainGeneration() && s.imageCount) return true;
         const loader::Device& d = *h.dapi;
-        if (s.imageCount)
+        if (s.imageCount || s.scene.handle != VK_NULL_HANDLE)
         {
-            // Earlier frames may still be presenting from these images.
+            // Earlier frames may still be presenting from these images or drawing into the scene.
             d.DeviceWaitIdle(s.device);
             s.completed = s.submitted;
+            CollectRetired(true);
             DropImageObjects();
         }
-        if (!EnsurePass(h.format)) return false;
-        s.format = h.format;
+        if (!ChooseDepthFormat(h)) return false;
 
         uint32_t count = 0;
         VkResult r = d.GetSwapchainImagesKHR(s.device, h.swapchain, &count, nullptr);
@@ -156,23 +84,6 @@ namespace gxvk::vk::frame::detail
                 Fail("vkCreateImageView", r);
                 return false;
             }
-
-            VkFramebufferCreateInfo fb = {};
-            fb.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fb.renderPass      = s.pass;
-            fb.attachmentCount = 1;
-            fb.pAttachments    = &s.views[i];
-            fb.width           = h.extent.width;
-            fb.height          = h.extent.height;
-            fb.layers          = 1;
-            r = d.CreateFramebuffer(s.device, &fb, nullptr, &s.framebuffers[i]);
-            if (r != VK_SUCCESS)
-            {
-                s.framebuffers[i] = VK_NULL_HANDLE;
-                Fail("vkCreateFramebuffer", r);
-                return false;
-            }
-
             // Per IMAGE, not per frame: only re-acquiring an image proves its present consumed it.
             r = d.CreateSemaphore(s.device, &sem, nullptr, &s.renderFinished[i]);
             if (r != VK_SUCCESS)
@@ -184,11 +95,32 @@ namespace gxvk::vk::frame::detail
         }
         s.imageCount = count;
         s.extent     = h.extent;
+        s.format     = h.format;
         s.swapGen    = context::SwapchainGeneration();
+
+        // The scene: the engine's back buffer, an offscreen image of the swapchain's size that every
+        // draw lands on and the present pass shows. Born UNDEFINED: its first pass clears it. Without
+        // it (the textures are not up: the draw path failed) nothing is drawn or presented, and the
+        // next frame tries again.
+        if (!texture::CreateTarget(h.extent.width, h.extent.height, 1, false, kSceneFormat, s.scene))
+        {
+            if (!s.loggedNoScene)
+            {
+                s.loggedNoScene = true;
+                Write(Error, "vulkan: frame: the scene image (%ux%u) could not be made; nothing reaches the window", h.extent.width, h.extent.height);
+            }
+            DropImageObjects();
+            return false;
+        }
+        if (!present::Rebuild(h.format, h.extent, s.views, count, s.scene.view) && !s.loggedNoPresent)
+        {
+            s.loggedNoPresent = true;
+            Write(Error, "vulkan: frame: the present pass could not be built; the scene is drawn but never shown");
+        }
         return true;
     }
 
-    /// The acquire, once a frame.
+    /// The acquire, once a frame, for the present.
     bool Acquire()
     {
         if (s.acquired) return true;
@@ -197,9 +129,6 @@ namespace gxvk::vk::frame::detail
         FrameSlot&              slot = s.slots[s.fi];
         if (!h || h->swapchain == VK_NULL_HANDLE || h->extent.width == 0 || h->extent.height == 0)
         {
-            // No swapchain (its creation declined at bring-up, a mid-resize zero extent): asked for
-            // again after this frame's submit, through the caller's Rebind, as long as the window is
-            // visible enough to be presented into.
             s.noImage = true;
             if (h) s.rebuild = true;
             ++s.stats.noImage;
@@ -215,14 +144,12 @@ namespace gxvk::vk::frame::detail
         VkResult r = s.dapi->AcquireNextImageKHR(s.device, h->swapchain, UINT64_MAX, slot.imageAvailable, VK_NULL_HANDLE, &image);
         if (r == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            // Nothing acquired, the semaphore untouched: this frame presents nothing, the swapchain
-            // is rebuilt after its submit.
             s.noImage = true;
             s.rebuild = true;
             ++s.stats.noImage;
             return false;
         }
-        if (r == VK_SUBOPTIMAL_KHR) s.rebuild = true;   // acquired: finish the frame, rebuild after
+        if (r == VK_SUBOPTIMAL_KHR) s.rebuild = true;
         else if (r != VK_SUCCESS)
         {
             Fail("vkAcquireNextImageKHR", r);
