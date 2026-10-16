@@ -76,6 +76,7 @@ namespace gxvk::vk::context::detail
         bool               wireframe   = false; ///< fillModeNonSolid was enabled: a LINE polygon mode is legal
 
         bool vsync            = true;  ///< the engine's format asks for vsync (SetVsync)
+        bool zeroSizeLogged   = false; ///< the "window is zero-size" line was written for the current down period
         bool validationWanted = false; ///< SetValidation: ask for the Khronos validation layer
         bool capsWanted       = true;  ///< probe and enable the optional capabilities (Caps.cpp)
 

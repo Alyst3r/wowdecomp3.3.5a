@@ -43,9 +43,11 @@ namespace gxvk::vk::frame::detail
         if (s.imageCount || s.scene.handle != VK_NULL_HANDLE)
         {
             // Earlier frames may still be presenting from these images or drawing into the scene.
+            // Only the submitted frames' retirements are collected: the open frame may have named
+            // a retired resource in commands not yet submitted.
             d.DeviceWaitIdle(s.device);
             s.completed = s.submitted;
-            CollectRetired(true);
+            CollectRetired(false);
             DropImageObjects();
         }
         if (!ChooseDepthFormat(h)) return false;
@@ -140,13 +142,19 @@ namespace gxvk::vk::frame::detail
             ++s.stats.noImage;
             return false;
         }
+        // A bounded wait: a surface in a fullscreen handoff (the window minimised or restored by
+        // the system) may hold the acquire; the frame then goes on without an image and tries
+        // again next time. OUT_OF_DATE is a rebuild; SURFACE_LOST a rebuild of the surface as well.
+        // The semaphore stays unsignalled on every failure, so the slot keeps it.
         uint32_t image = 0;
-        VkResult r = s.dapi->AcquireNextImageKHR(s.device, h->swapchain, UINT64_MAX, slot.imageAvailable, VK_NULL_HANDLE, &image);
-        if (r == VK_ERROR_OUT_OF_DATE_KHR)
+        VkResult r = s.dapi->AcquireNextImageKHR(s.device, h->swapchain, kAcquireTimeoutNs, slot.imageAvailable, VK_NULL_HANDLE, &image);
+        if (r == VK_ERROR_OUT_OF_DATE_KHR || r == VK_ERROR_SURFACE_LOST_KHR || r == VK_TIMEOUT || r == VK_NOT_READY)
         {
             s.noImage = true;
-            s.rebuild = true;
+            if (r != VK_TIMEOUT && r != VK_NOT_READY) s.rebuild = true;
+            if (r == VK_ERROR_SURFACE_LOST_KHR) s.surfaceLost = true;
             ++s.stats.noImage;
+            if (r != VK_ERROR_OUT_OF_DATE_KHR) Write(Debug, "vulkan: frame: vkAcquireNextImageKHR answered %s; no image this frame", ResultName(r));
             return false;
         }
         if (r == VK_SUBOPTIMAL_KHR) s.rebuild = true;

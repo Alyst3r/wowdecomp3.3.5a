@@ -239,7 +239,14 @@ namespace gxvk::vk::frame::detail
             r = d.QueuePresentKHR(h->presentQueue, &info);
             ++s.presentedCount;
             ++s.stats.presented;
+            // The present's semaphore wait still happens on a rejected present, so nothing is leaked.
             if (r == VK_ERROR_OUT_OF_DATE_KHR || r == VK_SUBOPTIMAL_KHR) s.rebuild = true;
+            else if (r == VK_ERROR_SURFACE_LOST_KHR)
+            {
+                s.rebuild     = true;
+                s.surfaceLost = true;
+                Write(Debug, "vulkan: frame: vkQueuePresentKHR answered VK_ERROR_SURFACE_LOST_KHR; the surface is remade");
+            }
             else if (r != VK_SUCCESS) Fail("vkQueuePresentKHR", r);
             if (s.presentedCount == 1)
                 Write(Debug, "vulkan: frame: first frame presented (%ux%u, %u images)", s.extent.width, s.extent.height, s.imageCount);
@@ -472,13 +479,19 @@ namespace gxvk::vk::frame
 
         if (s.rebuild && !s.failed)
         {
-            // Out of date, suboptimal, or a WM_SIZE: rebuilt once, here, between frames. The caller
-            // does the context's half (Rebind) with the window it owns.
+            // Out of date, suboptimal, a lost surface, or a WM_SIZE: rebuilt once, here, between
+            // frames. The caller does the context's half (Rebind) with the window it owns; a lost
+            // surface is dropped first so Rebind remakes it with the swapchain.
             s.rebuild = false;
             if (s.dapi) s.dapi->DeviceWaitIdle(s.device);
             s.completed = s.submitted;
             CollectRetired(true);
             DropImageObjects();
+            if (s.surfaceLost)
+            {
+                s.surfaceLost = false;
+                context::ReleaseWindow();
+            }
             return true;
         }
         return false;
@@ -486,7 +499,9 @@ namespace gxvk::vk::frame
 
     void RequestRebuild()
     {
-        if (s.swapGen != UINT32_MAX) s.rebuild = true;
+        // Also with nothing standing (the swapchain went down while the window was minimised): the
+        // rebuild at the next Present is what brings it back at the restored size.
+        if (s.dapi) s.rebuild = true;
     }
 
     void ReleaseSwapchain()

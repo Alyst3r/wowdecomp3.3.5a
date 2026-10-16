@@ -183,12 +183,13 @@ namespace gxvk::vk::frame
      * the frame is submitted and presented.
      *
      * @param bool visible : the window can show a frame (not minimised, non-empty client area)
-     * @return bool rebind : the swapchain went stale and the frame has dropped what named it; the
-     *         caller rebuilds it with context::Rebind()
+     * @return bool rebind : the swapchain went stale (out of date, suboptimal, a lost surface --
+     *         dropped here with the swapchain -- or a RequestRebuild()) and the frame has dropped
+     *         what named it; the caller rebuilds it with context::Rebind()
      */
     bool Present(bool visible);
 
-    /// A WM_SIZE: the swapchain is stale, rebuild it once at the next Present.
+    /// A WM_SIZE (a resize, a restore): the swapchain is stale, rebuild it once at the next Present.
     void RequestRebuild();
 
     /**

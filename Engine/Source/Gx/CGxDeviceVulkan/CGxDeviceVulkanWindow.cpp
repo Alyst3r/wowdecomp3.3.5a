@@ -126,8 +126,10 @@ void CGxDeviceVulkan::ISetWindowFocus(int32_t focus) {
     }
 }
 
-// Mirrors CGxDeviceD3d::DeviceWM (0x00690230). A size change marks the swapchain stale; the frame
-// rebuilds it once, between two presents, and the context rebinds it to the window.
+// Mirrors CGxDeviceD3d::DeviceWM (0x00690230). A size change (a resize, a restore from minimised,
+// a fullscreen re-activation) marks the swapchain stale; the frame rebuilds it once, between two
+// presents, and the context rebinds it to the window. Minimised, nothing is presented until the
+// restore.
 int32_t CGxDeviceVulkan::DeviceWM(EGxWM wm, uintptr_t param1, uintptr_t param2) {
     switch (wm) {
         case GxWM_Size:
@@ -224,6 +226,16 @@ LRESULT CALLBACK CGxDeviceVulkan::WindowProcVulkan(HWND hwnd, UINT message, WPAR
         }
 
         case WM_ACTIVATE:
+            if (!device) {
+                break;
+            }
+
+            // Fullscreen is a popup the size of the screen with no exclusive display mode behind
+            // it, so the system does not minimise it on deactivation the way it does D3D's
+            // exclusive-mode window: minimised here instead, so losing focus (alt-tab) leaves the
+            // screen as it does with D3D and coming back is a restore (WM_SIZE with the full size,
+            // which rebuilds the swapchain) whether the window is re-activated by alt-tab or by a
+            // click.
             if (LOWORD(wparam) == WA_INACTIVE) {
                 if (!device->IDevIsWindowed()) {
                     CRect rect;
@@ -232,8 +244,12 @@ LRESULT CALLBACK CGxDeviceVulkan::WindowProcVulkan(HWND hwnd, UINT message, WPAR
                     rect.maxY = 0.0f;
                     rect.maxX = 0.0f;
                     device->DeviceWM(GxWM_Size, reinterpret_cast<uintptr_t>(&rect), 1);
+
+                    if (!IsIconic(hwnd)) {
+                        ShowWindow(hwnd, SW_MINIMIZE);
+                    }
                 }
-            } else if (LOWORD(wparam) == WA_ACTIVE && !device->IDevIsWindowed()) {
+            } else if (!device->IDevIsWindowed()) {
                 CRect rect;
                 rect.minY = 0.0f;
                 rect.minX = 0.0f;

@@ -64,6 +64,8 @@ namespace gxvk::vk::context::detail
         if (r != VK_SUCCESS)
         {
             Write(Warn, "vulkan: vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed: %s", ResultName(r));
+            // A lost surface never answers again: dropped, so the next Rebind() makes a new one.
+            if (r == VK_ERROR_SURFACE_LOST_KHR) DropSurface();
             return false;
         }
 
@@ -223,8 +225,9 @@ namespace gxvk::vk::context::detail
         r = g.dapi.CreateSwapchainKHR(g.device, &info, nullptr, &g.swapchain);
         if (r != VK_SUCCESS)
         {
-            Write(Warn, "vulkan: vkCreateSwapchainKHR failed: %s", ResultName(r));
+            Write(Warn, "vulkan: vkCreateSwapchainKHR failed: %s; the next rebuild retries", ResultName(r));
             g.swapchain = VK_NULL_HANDLE;
+            if (r == VK_ERROR_SURFACE_LOST_KHR) DropSurface();
             return false;
         }
 
@@ -238,6 +241,7 @@ namespace gxvk::vk::context::detail
         g.extent        = extent;
         g.imageCount    = actual ? actual : imageCount;
         g.usage         = usage;
+        g.zeroSizeLogged = false;
         ++g.swapGen;
 
         Write(Debug,

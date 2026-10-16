@@ -121,7 +121,12 @@ namespace gxvk::vk::context
 
         if (win.width == 0 || win.height == 0)
         {
-            Write(Debug, "vulkan: the window is zero-size; the swapchain stays down until the next rebuild");
+            // Once per down period: a minimised window asks for this every frame.
+            if (!g.zeroSizeLogged)
+            {
+                g.zeroSizeLogged = true;
+                Write(Debug, "vulkan: the window is zero-size (minimised); the swapchain stays down until it is restored");
+            }
             return;
         }
         CreateSwapchain(win);

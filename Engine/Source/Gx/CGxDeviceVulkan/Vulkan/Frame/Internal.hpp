@@ -64,6 +64,10 @@ namespace gxvk::vk::frame::detail
     /// The scene's colour format: the engine's Argb8888 (its back buffer's).
     constexpr VkFormat kSceneFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
+    /// How long an acquire may block before the frame goes on without an image (a surface in a
+    /// fullscreen handoff can hold the acquire for as long as it likes).
+    constexpr uint64_t kAcquireTimeoutNs = 1000000000ull;
+
     struct FrameSlot
     {
         VkCommandBuffer cmd            = nullptr;   ///< the main buffer: the render passes and the draws
@@ -182,8 +186,9 @@ namespace gxvk::vk::frame::detail
         bool  clearDepthPending  = false;
         float clearColour[4]     = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-        bool     rebuild   = false;
-        bool     failed    = false;
+        bool     rebuild     = false;
+        bool     surfaceLost = false;   ///< the rebuild must remake the surface too
+        bool     failed      = false;
         uint64_t presentedCount = 0;
 
         Retired* retired      = nullptr;
