@@ -1,0 +1,173 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+	<Frame name="EditorParent" setAllPoints="true" frameStrata="MEDIUM">
+		<Frames>
+			<Frame name="EditorMenuBar" inherits="NoggitBoxTemplate">
+				<Size>
+					<AbsDimension y="26"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+					<Anchor point="TOPRIGHT"/>
+				</Anchors>
+			</Frame>
+			<Frame name="EditorStatusBar" inherits="NoggitBoxTemplate">
+				<Size>
+					<AbsDimension y="22"/>
+				</Size>
+				<Anchors>
+					<Anchor point="BOTTOMLEFT"/>
+					<Anchor point="BOTTOMRIGHT"/>
+				</Anchors>
+			</Frame>
+			<Frame name="EditorToolDock" inherits="NoggitBoxTemplate" enableMouse="true">
+				<Size>
+					<AbsDimension x="265"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPRIGHT" relativeTo="EditorMenuBar" relativePoint="BOTTOMRIGHT"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="EditorStatusBar" relativePoint="TOPRIGHT"/>
+				</Anchors>
+				<Frames>
+					<Frame name="EditorToolDockTitle" inherits="NoggitBoxTemplate">
+						<Size>
+							<AbsDimension y="27"/>
+						</Size>
+						<Anchors>
+							<Anchor point="TOPLEFT"/>
+							<Anchor point="TOPRIGHT"/>
+						</Anchors>
+						<Layers>
+							<Layer level="ARTWORK">
+								<FontString name="EditorToolDockTitleText" inherits="NoggitFont" justifyH="CENTER">
+									<Anchors>
+										<Anchor point="LEFT">
+											<Offset>
+												<AbsDimension x="12" y="0"/>
+											</Offset>
+										</Anchor>
+										<Anchor point="RIGHT">
+											<Offset>
+												<AbsDimension x="-70" y="0"/>
+											</Offset>
+										</Anchor>
+									</Anchors>
+								</FontString>
+							</Layer>
+						</Layers>
+						<Frames>
+							<Button name="EditorToolDockClose" inherits="NoggitBoxTemplate">
+								<Size>
+									<AbsDimension x="35" y="27"/>
+								</Size>
+								<Anchors>
+									<Anchor point="RIGHT"/>
+								</Anchors>
+								<Layers>
+									<Layer level="ARTWORK">
+										<Texture file="Interface\MapEditor\Textures\icon_close.tga">
+											<Size>
+												<AbsDimension x="14" y="14"/>
+											</Size>
+											<Anchors>
+												<Anchor point="CENTER"/>
+											</Anchors>
+											<TexCoords left="0" right="0.875" top="0" bottom="0.875"/>
+										</Texture>
+									</Layer>
+								</Layers>
+								<Scripts>
+									<OnEnter>
+										NoggitBox_Set(self, NOGGIT_COLOR_MID, nil);
+									</OnEnter>
+									<OnLeave>
+										NoggitBox_Set(self, NOGGIT_COLOR_DARK, nil);
+									</OnLeave>
+									<OnClick>
+										MapEditor_SetToolPanelShown(false);
+									</OnClick>
+								</Scripts>
+							</Button>
+							<Button name="EditorToolDockFloat" inherits="NoggitBoxTemplate">
+								<Size>
+									<AbsDimension x="35" y="27"/>
+								</Size>
+								<Anchors>
+									<Anchor point="RIGHT" relativeTo="EditorToolDockClose" relativePoint="LEFT"/>
+								</Anchors>
+								<Layers>
+									<Layer level="ARTWORK">
+										<Texture file="Interface\MapEditor\Textures\icon_restore.tga">
+											<Size>
+												<AbsDimension x="16" y="16"/>
+											</Size>
+											<Anchors>
+												<Anchor point="CENTER"/>
+											</Anchors>
+											<TexCoords left="0" right="0.75" top="0" bottom="0.75"/>
+										</Texture>
+									</Layer>
+								</Layers>
+								<Scripts>
+									<OnEnter>
+										NoggitBox_Set(self, NOGGIT_COLOR_MID, nil);
+									</OnEnter>
+									<OnLeave>
+										NoggitBox_Set(self, NOGGIT_COLOR_DARK, nil);
+									</OnLeave>
+									<OnClick>
+										MapEditor_ToggleDockFloating();
+									</OnClick>
+								</Scripts>
+							</Button>
+						</Frames>
+					</Frame>
+					<Frame name="EditorToolDockContent">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativeTo="EditorToolDockTitle" relativePoint="BOTTOMLEFT"/>
+							<Anchor point="BOTTOMRIGHT"/>
+						</Anchors>
+					</Frame>
+				</Frames>
+			</Frame>
+			<Frame name="EditorLeftToolbar" inherits="NoggitBoxTemplate" enableMouse="true">
+				<Size>
+					<AbsDimension x="44" y="44"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="EditorMenuBar" relativePoint="BOTTOMLEFT">
+						<Offset>
+							<AbsDimension x="5" y="-5"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+			</Frame>
+			<Frame name="EditorViewToolbar" inherits="NoggitBoxTemplate" enableMouse="true">
+				<Size>
+					<AbsDimension x="44" y="44"/>
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="EditorLeftToolbar" relativePoint="TOPRIGHT">
+						<Offset>
+							<AbsDimension x="10" y="0"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+			</Frame>
+		</Frames>
+		<Scripts>
+			<OnLoad>
+				MapEditor_OnLoad(self);
+			</OnLoad>
+			<OnUpdate>
+				MapEditor_OnUpdate(self, elapsed);
+			</OnUpdate>
+		</Scripts>
+	</Frame>
+	<EditorViewport name="EditorViewportFrame">
+		<Anchors>
+			<Anchor point="TOPLEFT" relativeTo="EditorMenuBar" relativePoint="BOTTOMLEFT"/>
+			<Anchor point="BOTTOMRIGHT" relativeTo="EditorToolDock" relativePoint="BOTTOMLEFT"/>
+		</Anchors>
+	</EditorViewport>
+</Ui>

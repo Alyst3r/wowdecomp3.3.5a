@@ -1,0 +1,13 @@
+## Interface: 30300
+## Title: Map Editor
+MapEditorCompat.lua
+NoggitFonts.xml
+NoggitTemplates.xml
+NoggitWidgets.lua
+NoggitDialogs.lua
+NoggitMenus.lua
+NoggitTools.lua
+NoggitWindows.lua
+NoggitProjects.lua
+MapEditor.lua
+MapEditor.xml

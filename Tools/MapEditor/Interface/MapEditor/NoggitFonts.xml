@@ -1,0 +1,82 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+	<Font name="NoggitFont" font="Interface\MapEditor\Fonts\segoeui.ttf" virtual="true" justifyH="LEFT">
+		<FontHeight>
+			<AbsValue val="12"/>
+		</FontHeight>
+		<Color r="0.843" g="0.843" b="0.843"/>
+	</Font>
+	<Font name="NoggitFontHighlight" inherits="NoggitFont" virtual="true">
+		<Color r="1.0" g="1.0" b="1.0"/>
+	</Font>
+	<Font name="NoggitFontDisabled" inherits="NoggitFont" virtual="true">
+		<Color r="0.498" g="0.498" b="0.498"/>
+	</Font>
+	<Font name="NoggitFont10" inherits="NoggitFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="10"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitFont15" inherits="NoggitFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="15"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitFont16" inherits="NoggitFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="16"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitFont16Disabled" inherits="NoggitFont16" virtual="true">
+		<Color r="0.498" g="0.498" b="0.498"/>
+	</Font>
+	<Font name="NoggitFont18" inherits="NoggitFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="18"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitFont30" inherits="NoggitFont" virtual="true" justifyH="CENTER">
+		<FontHeight>
+			<AbsValue val="30"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitFontBold" font="Interface\MapEditor\Fonts\segoeuisb.ttf" virtual="true">
+		<FontHeight>
+			<AbsValue val="13"/>
+		</FontHeight>
+		<Color r="0.843" g="0.843" b="0.843"/>
+	</Font>
+	<Font name="NoggitFontBoldDisabled" inherits="NoggitFontBold" virtual="true">
+		<Color r="0.498" g="0.498" b="0.498"/>
+	</Font>
+	<Font name="NoggitIconFont" font="Interface\MapEditor\Fonts\noggit_font.ttf" virtual="true" justifyH="CENTER">
+		<FontHeight>
+			<AbsValue val="22"/>
+		</FontHeight>
+		<Color r="0.843" g="0.843" b="0.843"/>
+	</Font>
+	<Font name="NoggitIconFontDisabled" inherits="NoggitIconFont" virtual="true">
+		<Color r="0.35" g="0.36" b="0.38"/>
+	</Font>
+	<Font name="NoggitIconFontSmall" inherits="NoggitIconFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="16"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitAwesomeFont" font="Interface\MapEditor\Fonts\font_awesome.ttf" virtual="true" justifyH="CENTER">
+		<FontHeight>
+			<AbsValue val="11"/>
+		</FontHeight>
+		<Color r="0.843" g="0.843" b="0.843"/>
+	</Font>
+	<Font name="NoggitAwesomeFont16" inherits="NoggitAwesomeFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="16"/>
+		</FontHeight>
+	</Font>
+	<Font name="NoggitAwesomeFont28" inherits="NoggitAwesomeFont" virtual="true">
+		<FontHeight>
+			<AbsValue val="28"/>
+		</FontHeight>
+	</Font>
+</Ui>
