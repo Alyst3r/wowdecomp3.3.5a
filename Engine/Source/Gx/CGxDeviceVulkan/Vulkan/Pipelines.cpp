@@ -154,7 +154,8 @@ namespace gxvk::vk::pipelines
             s.passGen = passGeneration;
         }
 
-        // The sampler-slot set: the pixel record's for a translated module, slot 0 alone otherwise.
+        // The sampler-slot set: the pixel record's for a translated module, slots 0 and 1 for the
+        // fixed-function stages, slot 0 alone otherwise.
         const bool translated = TranslatedFamily(draw.vertex) || TranslatedFamily(draw.fragment);
         uint32_t samplerMask = 1u;
         uint32_t cubeMask    = 0;
@@ -163,6 +164,8 @@ namespace gxvk::vk::pipelines
             samplerMask = draw.fragmentRecord->samplerMask;
             cubeMask    = draw.fragmentRecord->cubeMask;
         }
+        else if (draw.fragment == FragmentProgram::FixedFunction || draw.fragment == FragmentProgram::FixedFunctionTranslated)
+            samplerMask = 3u;
         uint32_t layoutIndex = 0;
         if (!LayoutFor(samplerMask, layoutIndex))
         {
@@ -317,6 +320,7 @@ namespace gxvk::vk::pipelines
         float push[kPushBytes / sizeof(float)];
         std::memcpy(push, draw.xform, sizeof draw.xform);
         std::memcpy(push + 16, draw.params, sizeof draw.params);
+        std::memcpy(push + 20, draw.tex, sizeof draw.tex);
         if (!b.pushed || std::memcmp(b.push, push, sizeof push) != 0)
         {
             d.CmdPushConstants(cmd, layout.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, kPushBytes, push);

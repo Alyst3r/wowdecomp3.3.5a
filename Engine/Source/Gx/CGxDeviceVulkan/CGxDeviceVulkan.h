@@ -161,6 +161,7 @@ class CGxDeviceVulkan : public CGxDevice {
     int32_t IPlaceD3d(VkViewport& viewport, VkRect2D& scissor);
     void IModelViewProj(float out[16]);
     void IRenderStates(gxvk::vk::pipelines::Draw& draw);
+    void ITexTransforms(gxvk::vk::pipelines::Draw& draw);
 };
 
 CGxDevice* CreateCGxDeviceVulkan();

@@ -10,11 +10,12 @@ namespace gxvk::vk::manifest { struct Record; }
 
 // Two families of programs, combined per draw:
 //
-//   The backend's own (Shaders/*.vert, *.frag), in their own interface -- position, colour and
-//   texcoord 0 at locations 0..2, the transform and parameters pushed:
-//     vertex    FixedFunction  the position through the matrix the draw pushes (World * View * ProjNative)
+//   The backend's own (Shaders/*.vert, *.frag), in their own interface -- position, colour,
+//   texcoord 0 and texcoord 1 at locations 0..3, the transform and parameters pushed:
+//     vertex    FixedFunction  the position through the matrix the draw pushes (World * View * ProjNative),
+//                              the texcoords through the stages' texture transforms
 //               Ui             the engine's "UI" vertex shader: the position against c0..c3 pushed
-//     fragment  FixedFunction  D3D9's texture stage 0 as the engine configures it, then the alpha test
+//     fragment  FixedFunction  D3D9's texture stages 0 and 1 as the engine configures them, then the alpha test
 //               Ui             the engine's "UI" pixel shader: texture * vertex colour, alpha test
 //               Desaturate     the engine's "Desaturate" pixel shader: the texture's luminance * colour
 //
@@ -132,10 +133,12 @@ namespace gxvk::vk::pipelines
         const manifest::Record* vertexRecord   = nullptr;   ///< with VertexProgram::Translated
         const manifest::Record* fragmentRecord = nullptr;   ///< with FragmentProgram::Translated
 
-        /// The push constants (Shaders/Push.glsl): the transform (the row-major matrix, or c0..c3)
-        /// and the parameters (alpha reference, textured, colour op, alpha op).
+        /// The push constants (Shaders/Push.glsl): the transform (the row-major matrix, or c0..c3),
+        /// the parameters (alpha reference, textured stages, colour ops, alpha ops) and the texture
+        /// transforms of stages 0 and 1 (identity by default).
         float xform[16] = {};
         float params[4] = {};
+        float tex[12]   = { 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
         Texture  textures[kTextureStages];   ///< set where textureMask has the bit
         uint32_t textureMask = 0;

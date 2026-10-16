@@ -1,8 +1,9 @@
 // The fixed-function vertex stage in the translated interface: what a translated pixel module pairs
 // with when the engine binds no vertex shader (or one this backend has no program for). Inputs by
 // semantic at the translated locations (position0 0, color0 2, texcoord0 4, texcoord1 5; the
-// elements the vertex lacks come from the constant stream), every varying of the interface written
-// so any pixel module's reads are covered: colour 1 black, texcoord 2..7 zero, fog factor 1 (no fog).
+// elements the vertex lacks come from the constant stream), texcoords 0 and 1 through their stages'
+// fixed-function texture transforms, every varying of the interface written so any pixel module's
+// reads are covered: colour 1 black, texcoord 2..7 zero, fog factor 1 (no fog).
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -30,8 +31,8 @@ void main()
     gl_Position = ToVulkanClip(pc.xform * vec4(inPos.xyz, 1.0));
     color0      = inColor;
     color1      = vec4(0.0);
-    texcoord0   = inTexCoord0;
-    texcoord1   = inTexCoord1;
+    texcoord0   = vec4(TexTransform(0u, inTexCoord0.xy), inTexCoord0.zw);
+    texcoord1   = vec4(TexTransform(1u, inTexCoord1.xy), inTexCoord1.zw);
     texcoord2   = vec4(0.0);
     texcoord3   = vec4(0.0);
     texcoord4   = vec4(0.0);

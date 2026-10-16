@@ -7,7 +7,8 @@
 #include "AlphaTest.glsl"
 
 layout(location = 0) in vec4 vColor;
-layout(location = 1) in vec2 vTexCoord;
+layout(location = 1) in vec2 vTexCoord0;
+layout(location = 2) in vec2 vTexCoord1;
 
 layout(location = 0) out vec4 outColor;
 
@@ -17,7 +18,7 @@ void main()
 {
     // Without a texture at stage 0 the bound image is the backend's 1x1 white, so the product is
     // the vertex colour, as D3D's shader reads a null texture as white.
-    vec4 c = texture(tex0, vTexCoord) * vColor;
+    vec4 c = texture(tex0, vTexCoord0) * vColor;
     AlphaTest(c.a);
     outColor = c;
 }

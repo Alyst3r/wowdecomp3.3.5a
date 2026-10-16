@@ -142,8 +142,6 @@ namespace {
         return shader->m_valid ? static_cast<Program*>(shader->m_apiSpecific) : nullptr;
     }
 
-    // The semantic-interface varyings the fixed-function pixel stage reads.
-    constexpr uint32_t kFixedPixelReads = (1u << manifest::kColor0) | (1u << manifest::kTexcoord0);
 }
 
 // Mirrors CGxDeviceD3d::ShaderCreate (0x006AA130): the base's object, created on the device at once
@@ -330,7 +328,9 @@ uint32_t CGxDeviceVulkan::IShaderPrograms(pipelines::Draw& draw) {
             this->IModelViewProj(draw.xform);
         }
 
-        return 1u;
+        // The fixed-function pixel stages read texture stages 0 and 1; the UI and Desaturate
+        // shaders stage 0 alone.
+        return draw.fragment == pipelines::FragmentProgram::FixedFunction ? 3u : 1u;
     }
 
     if (vsTranslated) {
@@ -379,5 +379,5 @@ uint32_t CGxDeviceVulkan::IShaderPrograms(pipelines::Draw& draw) {
         }
     }
 
-    return draw.fragmentRecord ? draw.fragmentRecord->samplerMask : 1u;
+    return draw.fragmentRecord ? draw.fragmentRecord->samplerMask : 3u;
 }

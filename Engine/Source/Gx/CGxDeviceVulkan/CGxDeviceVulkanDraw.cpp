@@ -1,7 +1,8 @@
 // The Vulkan backend's draw: the engine's vertex streams, index buffer, batch, transforms, texture
-// stages, blend mode, alpha test, depth and culling states, colour mask, fill mode, depth bias and
-// shaders read off the device at Draw time and recorded into the frame's render pass; the D3D
-// placement of the viewport and scissor; the projection in D3D's depth range.
+// stages and their texture transforms, blend mode, alpha test, depth and culling states, colour
+// mask, fill mode, depth bias and shaders read off the device at Draw time and recorded into the
+// frame's render pass; the D3D placement of the viewport and scissor; the projection in D3D's depth
+// range.
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -188,17 +189,23 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
         }
     }
 
-    // The alpha test and the stage-0 ops (Shaders/Push.glsl's params, and the translated
-    // interface's misc row).
+    // The alpha test, the textured stages and the ops of stages 0 and 1 (Shaders/Push.glsl's
+    // params: stage 1's ops in bits 3..5), the stage-0 ops alone in the translated interface's misc
+    // row, and the stages' texture transforms.
     const int32_t alphaRef = this->m_appRenderStates[GxRs_AlphaRef].m_value.m_data.i[0];
+    const uint32_t colourOp0 = this->m_appRenderStates[GxRs_ColorOp0].m_value.m_data.u[0] & 7u;
+    const uint32_t alphaOp0 = this->m_appRenderStates[GxRs_AlphaOp0].m_value.m_data.u[0] & 7u;
+    const uint32_t colourOp1 = this->m_appRenderStates[GxRs_ColorOp1].m_value.m_data.u[0] & 7u;
+    const uint32_t alphaOp1 = this->m_appRenderStates[GxRs_AlphaOp1].m_value.m_data.u[0] & 7u;
     d.params[0] = alphaRef > 0 ? static_cast<float>(alphaRef) : 0.0f;
-    d.params[1] = (d.textureMask & 1u) ? 1.0f : 0.0f;
-    d.params[2] = static_cast<float>(this->m_appRenderStates[GxRs_ColorOp0].m_value.m_data.i[0]);
-    d.params[3] = static_cast<float>(this->m_appRenderStates[GxRs_AlphaOp0].m_value.m_data.i[0]);
+    d.params[1] = static_cast<float>(d.textureMask & 3u);
+    d.params[2] = static_cast<float>(colourOp0 | (colourOp1 << 3));
+    d.params[3] = static_cast<float>(alphaOp0 | (alphaOp1 << 3));
     d.misc[0] = d.params[0] / 255.0f;
     d.misc[1] = 0.0f;
-    d.misc[2] = d.params[2];
-    d.misc[3] = d.params[3];
+    d.misc[2] = static_cast<float>(colourOp0);
+    d.misc[3] = static_cast<float>(alphaOp0);
+    this->ITexTransforms(d);
 
     // The register files of a translated draw. Pixel row 15, which no shipped pixel shader reads,
     // carries the fixed-function fog colour and enable for the generated companion stages: the
@@ -238,6 +245,47 @@ void CGxDeviceVulkan::Draw(CGxBatch* batch, int32_t count) {
 
     if (indexBuf) {
         this->INoteBufDrawn(indexBuf);
+    }
+}
+
+// The texture transforms of stages 0 and 1 as CGxDeviceD3d::IXformSetTex (0x006A5AA0) sets them for
+// a stage with GxRs_TextureShader at 1 and no texgen: the texgen stack's top times the stage's
+// matrix stack's top, applied to (u, v, 1) -- the 2x2 part and the translation row (D3D's COUNT2
+// with the translation moved into the row the 1 multiplies). A stage without the flag, or with
+// texgen (which the fixed-function programs do not do), keeps the identity. Nothing is pushed for a
+// stage whose matrix is flagged identity.
+void CGxDeviceVulkan::ITexTransforms(pipelines::Draw& d) {
+    for (uint32_t stage = 0; stage < 2; stage++) {
+        if (this->m_appRenderStates[GxRs_TextureShader0 + stage].m_value.m_data.i[0] != 1 || this->m_appRenderStates[GxRs_TexGen0 + stage].m_value.m_data.i[0] != GxTexGen_Disabled) {
+            continue;
+        }
+
+        const CGxMatrixStack& texGen = this->m_texGen[stage];
+        const CGxMatrixStack& xform = this->m_xforms[GxXform_Tex0 + stage];
+        const bool genIdentity = (texGen.m_flags[texGen.m_level] & CGxMatrixStack::F_Identity) != 0;
+        const bool xformIdentity = (xform.m_flags[xform.m_level] & CGxMatrixStack::F_Identity) != 0;
+
+        if (genIdentity && xformIdentity) {
+            continue;
+        }
+
+        C44Matrix m;
+
+        if (genIdentity) {
+            m = xform.m_mtx[xform.m_level];
+        } else if (xformIdentity) {
+            m = texGen.m_mtx[texGen.m_level];
+        } else {
+            m = texGen.m_mtx[texGen.m_level] * xform.m_mtx[xform.m_level];
+        }
+
+        float* part = &d.tex[stage * 4];
+        part[0] = m.a0;
+        part[1] = m.b0;
+        part[2] = m.a1;
+        part[3] = m.b1;
+        d.tex[8 + stage * 2] = m.d0;
+        d.tex[9 + stage * 2] = m.d1;
     }
 }
 

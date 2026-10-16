@@ -59,9 +59,10 @@ namespace gxvk::vk::pipelines::detail
     /// translated families; a full table refuses the draw and says so once.
     constexpr uint32_t kMaxPipelines = 2048;
 
-    /// The push constants of Shaders/Push.glsl: a mat4 and a vec4. Every pipeline layout carries
-    /// the range; the translated modules do not read it.
-    constexpr uint32_t kPushBytes = 16 * sizeof(float) + 4 * sizeof(float);
+    /// The push constants of Shaders/Push.glsl: a mat4, a vec4 and three vec4 of texture transform,
+    /// 128 bytes (Vulkan's guaranteed maxPushConstantsSize). Every pipeline layout carries the
+    /// range; the translated modules do not read it.
+    constexpr uint32_t kPushBytes = 16 * sizeof(float) + 4 * sizeof(float) + 12 * sizeof(float);
 
     /// Samplers kept at once.
     constexpr uint32_t kMaxSamplers = 64;

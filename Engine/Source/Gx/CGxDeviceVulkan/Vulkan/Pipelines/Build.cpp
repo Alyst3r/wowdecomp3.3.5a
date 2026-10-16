@@ -186,7 +186,8 @@ namespace
     /**
      * The vertex input of a key's vertex program.
      *
-     *   FixedFunction, Ui        position at 0, colour at 1, texcoord 0 at 2 (the backend's interface)
+     *   FixedFunction, Ui        position at 0, colour at 1, texcoord 0 at 2, texcoord 1 at 3 (the
+     *                            backend's interface)
      *   FixedFunctionSemantic    position0 at 0, color0 at 2, texcoord0 at 4, texcoord1 at 5
      *   Translated               the record's declared inputs, each at its semantic's location, each
      *                            required of the vertex
@@ -209,6 +210,7 @@ namespace
                 AddAttribute(k, in, 0, kAttribPosition, VK_FORMAT_R32G32B32_SFLOAT, 0);
                 AddAttribute(k, in, 1, kAttribColor0, VK_FORMAT_B8G8R8A8_UNORM, kConstantColourOffset);
                 AddAttribute(k, in, 2, kAttribTexCoord0, VK_FORMAT_R32G32_SFLOAT, kConstantTexcoordOffset);
+                AddAttribute(k, in, 3, kAttribTexCoord1, VK_FORMAT_R32G32_SFLOAT, kConstantTexcoordOffset);
                 return true;
 
             case VertexProgram::FixedFunctionSemantic:
@@ -294,7 +296,7 @@ namespace
             reads = r->readsMask;
         }
         else
-            reads = (1u << manifest::kColor0) | (1u << manifest::kTexcoord0);
+            reads = (1u << manifest::kColor0) | (1u << manifest::kTexcoord0) | (1u << (manifest::kTexcoord0 + 1));
         if ((reads & ~outputs) != 0)
         {
             why = "the pixel module reads a varying the vertex module does not write";
