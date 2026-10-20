@@ -1527,6 +1527,11 @@ void ClientConnection::CharacterAbortLogout() {
 void ClientConnection::HandleLogoutComplete() {
     if (this->m_inGame) {
         this->CharacterSetInGame(0);
+
+        for (uint32_t i = 0; i < 32; i++)
+        {
+            CGPlayer_C::s_combatRatings[i] = 0;
+        }
     }
 
     this->m_characterLoggedIn = 0;

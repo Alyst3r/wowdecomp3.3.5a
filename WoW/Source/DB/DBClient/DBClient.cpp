@@ -371,6 +371,8 @@ WowClientDB<LfgDungeonGroupRec> g_lfgDungeonGroupDB;
 // STATIC: 0x00AD4040
 WowClientDB<LfgDungeonsRec> g_lfgDungeonsDB;
 
+WowClientDB<LFGRolesRec> g_lfgRolesDB;
+
 // STATIC: 0x00AD4064
 WowClientDB<LiquidTypeRec> g_liquidTypeDB;
 
@@ -421,6 +423,10 @@ WowClientDB<NamesProfanityRec> g_namesProfanityDB;
 
 // STATIC: 0x00AD42A4
 WowClientDB<NamesReservedRec> g_namesReservedDB;
+
+WowClientDB<OcclusionVolumePointRec> g_occlusionVolumePointDB;
+
+WowClientDB<OcclusionVolumeRec> g_occlusionVolumeDB;
 
 // STATIC: 0x00AD42C8
 WowClientDB<OverrideSpellDataRec> g_overrideSpellDataDB;
@@ -701,6 +707,10 @@ WowClientDB<ZoneIntroMusicTableRec> g_zoneIntroMusicTableDB;
 // STATIC: 0x00AD4FB8
 WowClientDB<ZoneMusicRec> g_zoneMusicDB;
 
+WowClientDB<ZoneLightPointRec> g_zoneLightPointDB;
+
+WowClientDB<ZoneLightRec> g_zoneLightDB;
+
 // STATIC: 0x00AD4FDC
 WowClientDB<WorldStateZoneSoundsRec> g_worldStateZoneSoundsDB;
 
@@ -861,6 +871,7 @@ static void StaticDBLoadAll(void (WowClientDB_Base::*loadFunction)(const char*, 
     (g_lfgDungeonExpansionDB.*loadFunction)(__FILE__, __LINE__);
     (g_lfgDungeonGroupDB.*loadFunction)(__FILE__, __LINE__);
     (g_lfgDungeonsDB.*loadFunction)(__FILE__, __LINE__);
+    (g_lfgRolesDB.*loadFunction)(__FILE__, __LINE__);
     (g_lightDB.*loadFunction)(__FILE__, __LINE__);
     (g_lightFloatBandDB.*loadFunction)(__FILE__, __LINE__);
     (g_lightIntBandDB.*loadFunction)(__FILE__, __LINE__);
@@ -883,6 +894,8 @@ static void StaticDBLoadAll(void (WowClientDB_Base::*loadFunction)(const char*, 
     (g_npcSoundsDB.*loadFunction)(__FILE__, __LINE__);
     (g_namesProfanityDB.*loadFunction)(__FILE__, __LINE__);
     (g_namesReservedDB.*loadFunction)(__FILE__, __LINE__);
+    (g_occlusionVolumeDB.*loadFunction)(__FILE__, __LINE__);
+    (g_occlusionVolumePointDB.*loadFunction)(__FILE__, __LINE__);
     (g_overrideSpellDataDB.*loadFunction)(__FILE__, __LINE__);
     (g_packageDB.*loadFunction)(__FILE__, __LINE__);
     (g_pageTextMaterialDB.*loadFunction)(__FILE__, __LINE__);
@@ -976,6 +989,8 @@ static void StaticDBLoadAll(void (WowClientDB_Base::*loadFunction)(const char*, 
     (g_worldStateUIDB.*loadFunction)(__FILE__, __LINE__);
     (g_zoneIntroMusicTableDB.*loadFunction)(__FILE__, __LINE__);
     (g_zoneMusicDB.*loadFunction)(__FILE__, __LINE__);
+    (g_zoneLightDB.*loadFunction)(__FILE__, __LINE__);
+    (g_zoneLightPointDB.*loadFunction)(__FILE__, __LINE__);
     (g_worldStateZoneSoundsDB.*loadFunction)(__FILE__, __LINE__);
     (g_worldChunkSoundsDB.*loadFunction)(__FILE__, __LINE__);
     (g_soundEntriesAdvancedDB.*loadFunction)(__FILE__, __LINE__);

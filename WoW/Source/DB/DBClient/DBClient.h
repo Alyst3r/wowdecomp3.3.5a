@@ -104,6 +104,7 @@
 #include "WoW/Source/DB/Rec/LfgDungeonExpansionRec.h"
 #include "WoW/Source/DB/Rec/LfgDungeonGroupRec.h"
 #include "WoW/Source/DB/Rec/LfgDungeonsRec.h"
+#include "WoW/Source/DB/Rec/LFGRolesRec.h"
 #include "WoW/Source/DB/Rec/LightRec.h"
 #include "WoW/Source/DB/Rec/LightFloatBandRec.h"
 #include "WoW/Source/DB/Rec/LightIntBandRec.h"
@@ -131,6 +132,8 @@
 #include "WoW/Source/DB/Rec/ObjectEffectModifierRec.h"
 #include "WoW/Source/DB/Rec/ObjectEffectPackageRec.h"
 #include "WoW/Source/DB/Rec/ObjectEffectPackageElemRec.h"
+#include "WoW/Source/DB/Rec/OcclusionVolumePointRec.h"
+#include "WoW/Source/DB/Rec/OcclusionVolumeRec.h"
 #include "WoW/Source/DB/Rec/OverrideSpellDataRec.h"
 #include "WoW/Source/DB/Rec/PackageRec.h"
 #include "WoW/Source/DB/Rec/PageTextMaterialRec.h"
@@ -230,6 +233,8 @@
 #include "WoW/Source/DB/Rec/WorldStateUIRec.h"
 #include "WoW/Source/DB/Rec/WorldStateZoneSoundsRec.h"
 #include "WoW/Source/DB/Rec/ZoneIntroMusicTableRec.h"
+#include "WoW/Source/DB/Rec/ZoneLightPointRec.h"
+#include "WoW/Source/DB/Rec/ZoneLightRec.h"
 #include "WoW/Source/DB/Rec/ZoneMusicRec.h"
 #include "WoW/Source/DB/Rec/gtBarberShopCostBaseRec.h"
 #include "WoW/Source/DB/Rec/gtChanceToMeleeCritRec.h"
@@ -359,6 +364,7 @@ extern WowClientDB<LanguagesRec> g_languagesDB;
 extern WowClientDB<LfgDungeonExpansionRec> g_lfgDungeonExpansionDB;
 extern WowClientDB<LfgDungeonGroupRec> g_lfgDungeonGroupDB;
 extern WowClientDB<LfgDungeonsRec> g_lfgDungeonsDB;
+extern WowClientDB<LFGRolesRec> g_lfgRolesDB;
 extern WowClientDB<LiquidTypeRec> g_liquidTypeDB;
 extern WowClientDB<LiquidMaterialRec> g_liquidMaterialDB;
 extern WowClientDB<LoadingScreensRec> g_loadingScreensDB;
@@ -380,6 +386,8 @@ extern WowClientDB<NameGenRec> g_nameGenDB;
 extern WowClientDB<NPCSoundsRec> g_npcSoundsDB;
 extern WowClientDB<NamesProfanityRec> g_namesProfanityDB;
 extern WowClientDB<NamesReservedRec> g_namesReservedDB;
+extern WowClientDB<OcclusionVolumePointRec> g_occlusionVolumePointDB;
+extern WowClientDB<OcclusionVolumeRec> g_occlusionVolumeDB;
 extern WowClientDB<OverrideSpellDataRec> g_overrideSpellDataDB;
 extern WowClientDB<PackageRec> g_packageDB;
 extern WowClientDB<PageTextMaterialRec> g_pageTextMaterialDB;
@@ -472,6 +480,8 @@ extern WowClientDB<WorldMapTransformsRec> g_worldMapTransformsDB;
 extern WowClientDB<WorldSafeLocsRec> g_worldSafeLocsDB;
 extern WowClientDB<WorldStateUIRec> g_worldStateUIDB;
 extern WowClientDB<ZoneIntroMusicTableRec> g_zoneIntroMusicTableDB;
+extern WowClientDB<ZoneLightPointRec> g_zoneLightPointDB;
+extern WowClientDB<ZoneLightRec> g_zoneLightDB;
 extern WowClientDB<ZoneMusicRec> g_zoneMusicDB;
 extern WowClientDB<WorldStateZoneSoundsRec> g_worldStateZoneSoundsDB;
 extern WowClientDB<WorldChunkSoundsRec> g_worldChunkSoundsDB;

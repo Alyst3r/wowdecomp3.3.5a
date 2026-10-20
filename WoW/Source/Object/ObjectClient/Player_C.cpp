@@ -377,6 +377,8 @@ static int32_t s_zoneUpdateCounter;
 // STATIC: 0x00C9EC6C
 static bool s_dailyQuestsUntouched;
 
+int32_t CGPlayer_C::s_combatRatings[32];
+
 // VERIFY: a84630a0 auto
 // OFFSET: 0x006CDD80
 static int32_t OnUpdatePVPTitle(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
@@ -4413,6 +4415,19 @@ int32_t Packet_SMSG_DEBUG_SERVER_GEO(void* param, NETMESSAGE msgId, uint32_t tim
     return 1;
 }
 
+int32_t Packet_SMSG_UPDATE_COMBAT_RATING(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg)
+{
+    uint32_t ratingIndex;
+    int32_t amount;
+
+    msg->GetInt8(ratingIndex);
+    msg->Get(amount);
+
+    CGPlayer_C::s_combatRatings[ratingIndex] = amount;
+
+    return 1;
+}
+
 // VERIFY: 97769787 auto
 // OFFSET: 0x006E83B0
 void CGPlayer_C::PlayerInitializeMessageHandlers() {
@@ -4581,6 +4596,8 @@ void CGPlayer_C::PlayerInitializeMessageHandlers() {
     ClientServices::SetMessageHandler(SMSG_CAMERA_SHAKE, Packet_Group_9, nullptr);
     ClientServices::SetMessageHandler(SMSG_SOCKET_GEMS, Packet_Group_18, nullptr);
     ClientServices::SetMessageHandler(SMSG_COMBAT_LOG_MULTIPLE, Packet_SMSG_COMBAT_LOG_MULTIPLE, nullptr);
+    // Aleist3r: custom
+    ClientServices::SetMessageHandler(SMSG_UPDATE_COMBAT_RATING, Packet_SMSG_UPDATE_COMBAT_RATING, nullptr);
 }
 
 // VERIFY: ea8acbe5 manual
@@ -10708,7 +10725,7 @@ float CGPlayer_C::GetCombatRatingPct(int32_t rating) {
         return 0.0f;
     }
 
-    return scalar * (this->m_player->m_playerFieldCombatRating1[rating] / base);
+    return scalar * (s_combatRatings[rating] / base);
 }
 
 // VERIFY: 1e41332c manual

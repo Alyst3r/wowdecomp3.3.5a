@@ -141,6 +141,8 @@ int32_t Script_CanSwitchVehicleSeat(lua_State* L);
 int32_t Script_UnitIsControlling(lua_State* L);
 int32_t Script_CanEjectPassengerFromSeat(lua_State* L);
 int32_t Script_IsXPUserDisabled(lua_State* L);
+int32_t Script_GetShapeshiftFormID(lua_State* L);
+int32_t Script_PortGraveyard(lua_State* L);
 
 // STATIC: 0x009FE7EC
 const int32_t s_unitSexValues[3] = { 2, 3, 1 };
@@ -1934,15 +1936,15 @@ static int32_t Script_GetCombatRating(lua_State* L) {
 
     uint32_t index = static_cast<uint32_t>(lua_tonumber(L, 1)) - 1;
 
-    if (index >= 25) {
-        luaL_error(L, "ratingIndex is in the range 1 .. %d", 25);
+    if (index >= 32) {
+        luaL_error(L, "ratingIndex is in the range 1 .. %d", 32);
         return 0;
     }
 
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
     if (player) {
-        lua_pushnumber(L, static_cast<int32_t>(player->m_player->m_playerFieldCombatRating1[index]));
+        lua_pushnumber(L, CGPlayer_C::s_combatRatings[index]);
     } else {
         lua_pushnumber(L, 0.0);
     }
@@ -3195,15 +3197,15 @@ static int32_t Script_GetCombatRatingBonus(lua_State* L) {
         return 0;
     }
 
-    int32_t rating = static_cast<int32_t>(lua_tonumber(L, 1));
+    int32_t rating = static_cast<int32_t>(lua_tonumber(L, 1)) - 1;
 
-    if (static_cast<uint32_t>(rating - 1) >= 25) {
-        luaL_error(L, "ratingIndex is in the range 1 .. %d", 25);
+    if (rating >= 32) {
+        luaL_error(L, "ratingIndex is in the range 1 .. %d", 32);
         return 0;
     }
 
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-    lua_pushnumber(L, player ? player->GetCombatRatingPct(rating - 1) : 0.0);
+    lua_pushnumber(L, player ? player->GetCombatRatingPct(rating) : 0.0);
     return 1;
 }
 
@@ -3359,8 +3361,8 @@ static int32_t Script_UnitAttackPower(lua_State* L) {
 
     float multiplier = unit->m_unit->m_unitFieldAttackPowerMultiplier + 1.0f;
     lua_pushnumber(L, CMath::fint_(multiplier * unit->m_unit->m_unitFieldAttackPower));
-    lua_pushnumber(L, CMath::fint_((unit->m_unit->m_unitFieldAttackPowerMultiplier + 1.0f) * unit->m_unit->m_unitFieldAttackPowerMods[0]));
-    lua_pushnumber(L, CMath::fint_((unit->m_unit->m_unitFieldAttackPowerMultiplier + 1.0f) * unit->m_unit->m_unitFieldAttackPowerMods[1]));
+    lua_pushnumber(L, CMath::fint_(multiplier * unit->m_unit->m_unitFieldAttackPowerMods[0]));
+    lua_pushnumber(L, CMath::fint_(multiplier * unit->m_unit->m_unitFieldAttackPowerMods[1]));
     return 3;
 }
 
@@ -4455,6 +4457,59 @@ static int32_t Script_UnitIsAFK(lua_State* L) {
     return 1;
 }
 
+int32_t Script_GetShapeshiftFormID(lua_State* L)
+{
+    WOWGUID guid = ClntObjMgrGetActivePlayer();
+
+    if (!guid)
+    {
+        lua_pushnumber(L, 0);
+
+        return 1;
+    }
+
+    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+
+    if (!activePlayer)
+    {
+        lua_pushnumber(L, 0);
+
+        return 1;
+    }
+
+    lua_pushnumber(L, static_cast<double>(activePlayer->GetShapeshiftForm()));
+
+    return 1;
+}
+
+int32_t Script_PortGraveyard(lua_State* L)
+{
+    WOWGUID guid = ClntObjMgrGetActivePlayer();
+
+    if (!guid)
+    {
+        return 0;
+    }
+
+    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+
+    if (!activePlayer)
+    {
+        return 0;
+    }
+
+    if (activePlayer->m_player->m_playerFlags & 0x10)
+    {
+        CDataStore msg;
+
+        msg.Put(static_cast<uint32_t>(CMSG_TELEPORT_GRAVEYARD_REQUEST));
+        msg.Finalize();
+        ClientServices::Send2(&msg);
+    }
+
+    return 0;
+}
+
 // STATIC: 0x00AD21D8
 static FrameScript_Method s_UnitFunctions[] = {
     { "UnitExists", &Script_UnitExists },
@@ -4626,6 +4681,8 @@ static FrameScript_Method s_UnitFunctions[] = {
     { "GetItemStatDelta", &Script_GetItemStatDelta },
     { "IsXPUserDisabled", &Script_IsXPUserDisabled },
     { "FillLocalizedClassList", &Script_FillLocalizedClassList },
+    { "GetShapeshiftFormID", &Script_GetShapeshiftFormID },
+    { "PortGraveyard", &Script_PortGraveyard },
 };
 
 // VERIFY: 24f40cd0 auto

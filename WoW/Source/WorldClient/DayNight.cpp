@@ -2718,6 +2718,7 @@ void DayNight::SetColors() {
     DayNight::g_sunGlare.m_color = sunColor;
     DayNight::g_planets.m_moon.m_color = sunColor;
     DayNight::g_moonGlare.m_color = sunColor;
+    DayNight::g_planets.m_moon2.m_color = sunColor;
 
     if (info.m_flashBlend != 0.0f) {
         CImVector flash = info.m_flashColor;
@@ -2743,10 +2744,8 @@ void DayNight::SetColors() {
 
         if (blend) {
             DayNight::g_planets.m_sun.m_color.InterpColor(blend, &flash);
-        }
-
-        if (blend) {
             DayNight::g_planets.m_moon.m_color.InterpColor(blend, &flash);
+            DayNight::g_planets.m_moon2.m_color.InterpColor(blend, &flash);
         }
     }
 
