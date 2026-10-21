@@ -1268,7 +1268,7 @@ static int32_t Script_GetQuestLogRewardTitle(lua_State* L) {
     const char* name;
 
     if (player) {
-        gender = player->m_player->m_playerBytes3[0];
+        gender = player->m_player->m_playerBytes2.m_gender;
         name = player->GetUnitName(nullptr, 1);
     } else {
         gender = 0;

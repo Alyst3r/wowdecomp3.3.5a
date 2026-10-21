@@ -51,7 +51,7 @@ void SI2::PlayVocalErrorSound(int32_t error) {
 
     CGPlayer_C* player = ClntObjMgrGetActivePlayerObj();
 
-    if (player && player->m_unit->m_unitFieldBytes0[1] == 6) {
+    if (player && player->m_unit->m_unitFieldBytes0.m_class == 6) {
         properties.m_useDspChain = 1;
         SI2::DK_GetPlayerFilterName(player, properties.m_dspChainName, sizeof(properties.m_dspChainName));
     }

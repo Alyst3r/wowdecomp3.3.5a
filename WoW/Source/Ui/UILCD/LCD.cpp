@@ -305,7 +305,7 @@ void CGLCD::Login() {
     s_subscreen = 0;
     CGLCD::m_inWorld = 1;
 
-    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(player->m_unit->m_unitFieldBytes0[1]);
+    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_class);
 
     if (classRec) {
         s_classFlag8 = (classRec->m_flags >> 3) & 1;
@@ -313,7 +313,7 @@ void CGLCD::Login() {
 
     int32_t soulShard;
 
-    switch (player->m_unit->m_unitFieldBytes0[1]) {
+    switch (player->m_unit->m_unitFieldBytes0.m_class) {
         case 1:
         case 3:
         case 4: {
@@ -472,7 +472,7 @@ static const char* GetAmmoToken() {
         return "";
     }
 
-    switch (CGLCD::m_player->m_unit->m_unitFieldBytes0[1]) {
+    switch (CGLCD::m_player->m_unit->m_unitFieldBytes0.m_class) {
         case 1:
         case 3:
         case 4:
@@ -670,7 +670,7 @@ static int32_t GetAmmoCount() {
     CGPlayer_C* player = CGLCD::m_player;
     int32_t ammoId = player->m_obj->m_guid == ClntObjMgrGetActivePlayer() ? player->m_player->m_playerAmmoId : 0;
 
-    if (CGLCD::m_player->m_unit->m_unitFieldBytes0[1] == 9) {
+    if (CGLCD::m_player->m_unit->m_unitFieldBytes0.m_class == 9) {
         return CGLCD::m_player->m_bag.GetItemTypeCount(6265, 0);
     }
 
@@ -1036,7 +1036,7 @@ void CGLCD::DisplaySpellStats() {
     CGLCD::SetStat("SPELL_HASTE", CGPlayer_C::s_combatRatings[19]);
     int32_t manaRegen = 0;
 
-    if (!CGLCD::m_player->m_unit->m_unitFieldBytes0[3]) {
+    if (!CGLCD::m_player->m_unit->m_unitFieldBytes0.m_powerType) {
         float regen = CGLCD::m_player->GetPowerRegen(POWER_TYPE_MANA, false);
         manaRegen = static_cast<int32_t>(floor((regen + 0.001f) * 5.0f));
     }

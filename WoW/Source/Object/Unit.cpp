@@ -52,7 +52,7 @@ int32_t CGUnit::CanPlayEmote(uint32_t emoteFlags, int32_t targeted, int32_t* sta
         return 0;
     }
 
-    if ((emoteFlags & 0x1) && this->m_unit->m_unitFieldBytes1[0]) {
+    if ((emoteFlags & 0x1) && this->m_unit->m_unitFieldBytes1.m_standState) {
         return 0;
     }
 
@@ -73,7 +73,7 @@ int32_t CGUnit::CanPlayEmote(uint32_t emoteFlags, int32_t targeted, int32_t* sta
     }
 
     if (!(emoteFlags & 0x200)) {
-        uint8_t standState = this->m_unit->m_unitFieldBytes1[0];
+        uint8_t standState = this->m_unit->m_unitFieldBytes1.m_standState;
 
         if (standState == 3 || standState == 7) {
             return 0;
@@ -167,7 +167,7 @@ int32_t CGUnit::IsJumping() const {
 // VERIFY: 4e64bda0 auto
 // OFFSET: 0x005FA9E0
 int32_t CGUnit::CanMove() const {
-    return this->m_unit->m_unitFieldHealth > 0 && !(this->m_movement->m_flags & 0x100A00) && this->m_unit->m_unitFieldBytes1[0] != 7;
+    return this->m_unit->m_unitFieldHealth > 0 && !(this->m_movement->m_flags & 0x100A00) && this->m_unit->m_unitFieldBytes1.m_standState != 7;
 }
 
 // VERIFY: 68641d42 auto
@@ -289,7 +289,7 @@ int32_t CGUnit::GetQuestGreenRange() const {
 // VERIFY: 467ea880 manual
 // OFFSET: 0x00716190
 bool CGUnit::IsSitting() const {
-    uint8_t standState = this->m_unit->m_unitFieldBytes1[0];
+    uint8_t standState = this->m_unit->m_unitFieldBytes1.m_standState;
     return standState == 1 || (standState >= 4 && standState <= 6);
 }
 

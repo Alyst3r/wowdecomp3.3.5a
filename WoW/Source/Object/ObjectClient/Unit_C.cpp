@@ -446,7 +446,7 @@ int32_t UnitMaxPowerUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t f
 // OFFSET: 0x00723620
 int32_t UnitDisplayPowerUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
     CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
-    POWER_TYPE powerType = static_cast<POWER_TYPE>(unit->m_unit->m_unitFieldBytes0[3]);
+    POWER_TYPE powerType = static_cast<POWER_TYPE>(unit->m_unit->m_unitFieldBytes0.m_powerType);
 
     if (powerType == POWER_TYPE_HEALTH) {
         unit->SetPredictedPower(powerType, unit->m_unit->m_unitFieldHealth);
@@ -627,7 +627,7 @@ int32_t SheatheStateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSi
     uint32_t oldState = *static_cast<const uint32_t*>(oldValue);
 
     if (unit->m_obj->m_guid != ClntObjMgrGetActivePlayer() || unit->m_sheatheState == oldState) {
-        unit->SetSheatheState(unit->m_unit->m_unitFieldBytes2[0], 1, 1);
+        unit->SetSheatheState(unit->m_unit->m_unitFieldBytes2.m_sheatheState, 1, 1);
     }
 
     return 1;
@@ -719,7 +719,7 @@ int32_t StandStateUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fie
         CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
         if (unit) {
-            unit->UpdateClientStandState(unit->m_unit->m_unitFieldBytes1[0]);
+            unit->UpdateClientStandState(unit->m_unit->m_unitFieldBytes1.m_standState);
         }
     }
 
@@ -2170,13 +2170,13 @@ void CGUnit_C::RefreshInteractIcon() {
 // VERIFY: 136d61d4 auto
 // OFFSET: 0x00724D90
 void CGUnit_C::OnPvPFlagChanged(uint8_t oldFlags) {
-    if (oldFlags == this->m_unit->m_unitFieldBytes2[1]) {
+    if (oldFlags == this->m_unit->m_unitFieldBytes2.m_pvpFlag) {
         return;
     }
 
     this->UpdateReaction(false);
 
-    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer() && (this->m_unit->m_unitFieldBytes2[1] & 0x1)) {
+    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer() && (this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x1)) {
         CGTutorial::TriggerTutorial(31);
     }
 }
@@ -2987,7 +2987,7 @@ UNIT_REACTION CGUnit_C::UnitReaction(const CGUnit_C* unit) const {
 
         data = this->m_unit;
 
-        if ((data->m_unitFieldBytes2[1] & 0x4) && (unit->m_unit->m_unitFieldBytes2[1] & 0x4)) {
+        if ((data->m_unitFieldBytes2.m_pvpFlag & 0x4) && (unit->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x4)) {
             return UNIT_REACTION_HOSTILE;
         }
     }
@@ -3159,14 +3159,14 @@ bool CGUnit_C::CanAttack(const CGUnit_C* unit) const {
                 if (player->m_playerDuelTeam && otherPlayer->m_playerDuelTeam && player->m_playerDuelArbiter == otherPlayer->m_playerDuelArbiter) {
                     result = true;
                 } else {
-                    uint8_t otherPvp = unit->m_unit->m_unitFieldBytes2[1];
+                    uint8_t otherPvp = unit->m_unit->m_unitFieldBytes2.m_pvpFlag;
 
                     if (otherPvp & 0x1) {
-                        if (!(this->m_unit->m_unitFieldBytes2[1] & 0x8)) {
+                        if (!(this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x8)) {
                             result = !(otherPvp & 0x8);
                         }
                     } else {
-                        uint8_t pvp = this->m_unit->m_unitFieldBytes2[1];
+                        uint8_t pvp = this->m_unit->m_unitFieldBytes2.m_pvpFlag;
 
                         if ((pvp & 0x4) && (otherPvp & 0x4)) {
                             result = true;
@@ -3175,19 +3175,19 @@ bool CGUnit_C::CanAttack(const CGUnit_C* unit) const {
                         }
                     }
                 }
-            } else if (!(this->m_unit->m_unitFieldBytes2[1] & 0x8)) {
-                result = !(unit->m_unit->m_unitFieldBytes2[1] & 0x8);
+            } else if (!(this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x8)) {
+                result = !(unit->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x8);
             }
         }
 
         return result;
     }
 
-    if ((data->m_unitFieldFlags & 0x8) && (unit->m_unit->m_unitFieldBytes2[1] & 0x8)) {
+    if ((data->m_unitFieldFlags & 0x8) && (unit->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x8)) {
         return false;
     }
 
-    if ((unit->m_unit->m_unitFieldFlags & 0x8) && (data->m_unitFieldBytes2[1] & 0x8)) {
+    if ((unit->m_unit->m_unitFieldFlags & 0x8) && (data->m_unitFieldBytes2.m_pvpFlag & 0x8)) {
         return false;
     }
 
@@ -4334,10 +4334,10 @@ void CGUnit_C::UpdateHandItemAnimEffects(bool force) {
         return;
     }
 
-    if (this->IsActivePlayer() || this->m_sheatheState == this->m_unit->m_unitFieldBytes2[0]) {
+    if (this->IsActivePlayer() || this->m_sheatheState == this->m_unit->m_unitFieldBytes2.m_sheatheState) {
         this->SetHandItemSpellEffectsVisible(1);
     } else {
-        this->SetSheatheState(this->m_unit->m_unitFieldBytes2[0], 1, 0);
+        this->SetSheatheState(this->m_unit->m_unitFieldBytes2.m_sheatheState, 1, 0);
     }
 }
 
@@ -4713,7 +4713,7 @@ int32_t CGUnit_C::ShouldRenderObjectName(uint32_t flags) const {
             return (flags >> 7) & 0x1;
         }
 
-        if ((flags & 0x10) && !(this->m_unit->m_unitFieldBytes1[2] & 0x2)) {
+        if ((flags & 0x10) && !(this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2)) {
             return 1;
         }
 
@@ -4723,7 +4723,7 @@ int32_t CGUnit_C::ShouldRenderObjectName(uint32_t flags) const {
     if (controller && (controller->m_obj->m_type & TYPEMASK_PLAYER)) {
         bool friendly = !player->CanAttack(this);
 
-        if (!friendly && (this->m_unit->m_unitFieldBytes1[2] & 0x2)) {
+        if (!friendly && (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2)) {
             return 0;
         }
 
@@ -4752,7 +4752,7 @@ int32_t CGUnit_C::ShouldRenderObjectName(uint32_t flags) const {
         return (flags >> 5) & 0x1;
     }
 
-    if ((this->m_unit->m_unitFieldBytes1[2] & 0x2) && player->CanAttack(this)) {
+    if ((this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2) && player->CanAttack(this)) {
         return 0;
     }
 
@@ -6486,7 +6486,7 @@ int32_t CGUnit_C::IsSplashing(const C3Vector& position) const {
 // VERIFY: 066b72ae auto
 // OFFSET: 0x0071A380
 uint32_t CGUnit_C::GetClientStandState() const {
-    return this->m_unit->m_unitFieldBytes1[0];
+    return this->m_unit->m_unitFieldBytes1.m_standState;
 }
 
 // VERIFY: 232c855f manual
@@ -6506,7 +6506,7 @@ uint32_t CGUnit_C::GetDisplayRace() const {
         return this->m_displayInfoExtra->m_displayRaceID;
     }
 
-    return this->m_unit->m_unitFieldBytes0[0];
+    return this->m_unit->m_unitFieldBytes0.m_race;
 }
 
 // VERIFY: f436709c auto
@@ -6516,7 +6516,7 @@ uint32_t CGUnit_C::GetDisplaySex() const {
         return this->m_displayInfoExtra->m_displaySexID;
     }
 
-    return this->m_unit->m_unitFieldBytes0[2];
+    return this->m_unit->m_unitFieldBytes0.m_gender;
 }
 
 // VERIFY: d86707be auto
@@ -6601,7 +6601,7 @@ uint32_t CGUnit_C::GetShapeshiftForm() const {
         return 0;
     }
 
-    return this->m_unit->m_unitFieldBytes2[3];
+    return this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
 }
 
 // VERIFY: ae4e25f4 auto
@@ -6650,13 +6650,13 @@ bool CGUnit_C::CanGainXP() const {
     }
 
     CGUnit_C* owner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(unit->m_unitFieldCreatedby, TYPEMASK_PLAYER, __FILE__, __LINE__));
-    return owner && owner->m_unit->m_unitFieldBytes0[1] == 3;
+    return owner && owner->m_unit->m_unitFieldBytes0.m_class == 3;
 }
 
 // VERIFY: 6c86f70b manual
 // OFFSET: 0x0071B680
 int32_t CGUnit_C::IsPVPLeader() const {
-    if (!(this->m_unit->m_unitFieldBytes2[1] & 0x1)) {
+    if (!(this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x1)) {
         return 0;
     }
 
@@ -7108,7 +7108,7 @@ int32_t CGUnit_C::OverrideAnimForFlying(uint32_t* anim) const {
 // VERIFY: eab41c40 auto
 // OFFSET: 0x0071F300
 int32_t CGUnit_C::GetCreatureType() const {
-    uint32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2[3];
+    uint32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
     SpellShapeshiftFormRec* shapeshift = g_spellShapeshiftFormDB.GetRecord(form);
 
     if (shapeshift && shapeshift->m_creatureType > 0) {
@@ -7119,7 +7119,7 @@ int32_t CGUnit_C::GetCreatureType() const {
         return this->m_creatureCacheEntry->m_type;
     }
 
-    ChrRacesRec* race = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0[0]);
+    ChrRacesRec* race = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_race);
 
     if (!race || race->m_creatureType <= 0) {
         return 0;
@@ -7139,7 +7139,7 @@ PetPersonalityRec* CGUnit_C::GetPetPersonality() const {
 
     CGUnit_C* owner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(unit->m_unitFieldCreatedby, TYPEMASK_PLAYER, __FILE__, __LINE__));
 
-    if (!owner || owner->m_unit->m_unitFieldBytes0[1] != 3) {
+    if (!owner || owner->m_unit->m_unitFieldBytes0.m_class != 3) {
         return nullptr;
     }
 
@@ -7202,10 +7202,10 @@ uint32_t CGUnit_C::GetVoiceSex() const {
     }
 
     if (this->m_obj->m_type & TYPEMASK_PLAYER) {
-        return static_cast<const CGPlayer_C*>(this)->m_player->m_playerBytes3[0];
+        return static_cast<const CGPlayer_C*>(this)->m_player->m_playerBytes2.m_gender;
     }
 
-    return this->m_unit->m_unitFieldBytes0[2];
+    return this->m_unit->m_unitFieldBytes0.m_gender;
 }
 
 // VERIFY: bc5ad5e9 auto
@@ -7215,7 +7215,7 @@ bool CGUnit_C::IsShapeShifted() const {
         return false;
     }
 
-    uint32_t form = this->m_unit->m_unitFieldBytes2[3];
+    uint32_t form = this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
 
     if (!form) {
         return false;
@@ -7231,7 +7231,7 @@ void CGUnit_C::PreemptivelyCancelShapeshift() {
         return;
     }
 
-    uint32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2[3];
+    uint32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
     SpellShapeshiftFormRec* shapeshift = g_spellShapeshiftFormDB.GetRecord(form);
 
     if (shapeshift) {
@@ -7257,7 +7257,7 @@ bool CGUnit_C::IsCancelShapeshiftAtFlightMaster() const {
         return false;
     }
 
-    uint32_t form = this->m_unit->m_unitFieldBytes2[3];
+    uint32_t form = this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
 
     if (!form) {
         return false;
@@ -7312,9 +7312,9 @@ const char* CGUnit_C::GetFrameScriptText(const char* token, int32_t count) const
     uint32_t sex;
 
     if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer()) {
-        sex = static_cast<const CGPlayer_C*>(this)->m_player->m_playerBytes3[0];
+        sex = static_cast<const CGPlayer_C*>(this)->m_player->m_playerBytes2.m_gender;
     } else {
-        sex = this->m_unit->m_unitFieldBytes0[2];
+        sex = this->m_unit->m_unitFieldBytes0.m_gender;
     }
 
     return FrameScript_GetText(token, count, sex == 1 ? GENDER_FEMALE : GENDER_MALE);
@@ -7410,7 +7410,7 @@ int32_t AnimTierChangeHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t field
     CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
     if (unit) {
-        int32_t tier = unit->m_unit->m_unitFieldBytes1[3];
+        int32_t tier = unit->m_unit->m_unitFieldBytes1.m_animTier;
 
         if (tier != unit->m_animTier) {
             unit->m_animTier = tier;
@@ -7808,7 +7808,7 @@ int32_t CGUnit_C::VehiclePassengerIsTransitionAllowed(const VehicleSeatRec* seat
 int32_t CGUnit_C::ShouldFadeIn() const {
     CGUnitData* unit = this->m_unit;
 
-    if ((unit->m_unitFieldFlags2 & 0x20) || (unit->m_unitFieldFlags & 0x2) || (unit->m_unitFieldBytes1[2] & 0x2)) {
+    if ((unit->m_unitFieldFlags2 & 0x20) || (unit->m_unitFieldFlags & 0x2) || (unit->m_unitFieldBytes1.m_visFlag & 0x2)) {
         return 0;
     }
 
@@ -7867,7 +7867,7 @@ int32_t CGUnit_C::ChooseMovementAnim(uint32_t flags, uint32_t* anim) const {
         return 1;
     }
 
-    if (this->m_unit->m_unitFieldBytes1[2] & 0x2) {
+    if (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2) {
         *anim = ANIM_STEALTH_WALK;
         return 1;
     }
@@ -8376,7 +8376,7 @@ void CGUnit_C::ChooseDefaultAnim(uint32_t& anim, int32_t force) const {
         return;
     }
 
-    if (this->m_unit->m_unitFieldBytes1[2] & 0x2) {
+    if (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2) {
         anim = ANIM_STEALTH_STAND;
         return;
     }
@@ -9574,8 +9574,8 @@ CGUnit_C::CGUnit_C(uint32_t time, const CClientObjCreate& create)
       m_ammoModel(nullptr),
       m_ammoDisplayId(0),
       m_characterComponent(nullptr),
-      m_previousSheatheState(this->m_unit->m_unitFieldBytes2[0]),
-      m_sheatheState(this->m_unit->m_unitFieldBytes2[0]),
+      m_previousSheatheState(this->m_unit->m_unitFieldBytes2.m_sheatheState),
+      m_sheatheState(this->m_unit->m_unitFieldBytes2.m_sheatheState),
       m_chainSpellLocation(0.0f, 0.0f, 0.0f),
       m_mountAnimBehaviorId(91),
       m_animTier(0),
@@ -9849,7 +9849,7 @@ void CGUnit_C::PostInit(uint32_t time, const CClientObjCreate& create, bool reen
 
     this->UpdateUnitCollisionBox(1, 1);
 
-    ChrRacesRec* race = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0[0]);
+    ChrRacesRec* race = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_race);
 
     if (race) {
         this->m_splashSoundKitId = race->m_splashSoundID;
@@ -9896,7 +9896,7 @@ void CGUnit_C::PostInit(uint32_t time, const CClientObjCreate& create, bool reen
         this->m_alpha = this->m_fadeEndAlpha;
     }
 
-    this->m_animTier = this->m_unit->m_unitFieldBytes1[3];
+    this->m_animTier = this->m_unit->m_unitFieldBytes1.m_animTier;
     this->m_movementData.UpdateHoverState(this->m_animTier == 2, 0);
     this->m_movementData.m_hoverHeight = this->m_unit->m_unitFieldHoverheight;
     this->CreateOrDestroyObjectEffectManager();
@@ -11820,20 +11820,20 @@ bool CGUnit_C::CanAssist(const CGUnit_C* unit, bool ignoreFlags) const {
             }
         }
 
-        uint8_t bytes = unit->m_unit->m_unitFieldBytes2[1];
+        uint8_t bytes = unit->m_unit->m_unitFieldBytes2.m_pvpFlag;
 
-        if ((bytes & 0x4) && !(this->m_unit->m_unitFieldBytes2[1] & 0x4)) {
+        if ((bytes & 0x4) && !(this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x4)) {
             return false;
         }
 
-        return !(this->m_unit->m_unitFieldBytes2[1] & 0x8) || (bytes & 0x8) || !(bytes & 0x1);
+        return !(this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x8) || (bytes & 0x8) || !(bytes & 0x1);
     }
 
     if (!(this->m_unit->m_unitFieldFlags & 0x8)) {
         return true;
     }
 
-    return ignoreFlags || (unit->m_unit->m_unitFieldBytes2[1] & 0x1) || unit->CanAidPlayers() || unit->IsTreatAsRaidUnit();
+    return ignoreFlags || (unit->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x1) || unit->CanAidPlayers() || unit->IsTreatAsRaidUnit();
 }
 
 // VERIFY: bd65a3f6 manual
@@ -11982,7 +11982,7 @@ bool CGUnit_C::IgnoresAuraState(const SpellRec* spell) const {
 // VERIFY: 9a4ea4e4 auto
 // OFFSET: 0x0072BC20
 bool CGUnit_C::CheckStealthRules(const SpellRec* spell, int32_t* reason) const {
-    if (!(spell->m_attributes & 0x20000) || (this->m_unit->m_unitFieldBytes1[2] & 0x2) || this->AffectedByAura(275, spell)) {
+    if (!(spell->m_attributes & 0x20000) || (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2) || this->AffectedByAura(275, spell)) {
         return true;
     }
 
@@ -12073,7 +12073,7 @@ char* CGUnit_C::GetUnitChosenTitle(char* buffer, uint32_t size, int32_t showTitl
         return buffer;
     }
 
-    uint32_t sex = this->IsActivePlayer() ? static_cast<CGPlayer_C*>(this)->m_player->m_playerBytes3[0] : this->m_unit->m_unitFieldBytes0[2];
+    uint32_t sex = this->IsActivePlayer() ? static_cast<CGPlayer_C*>(this)->m_player->m_playerBytes2.m_gender : this->m_unit->m_unitFieldBytes0.m_gender;
     char format[400];
 
     if (sex == 1) {
@@ -12084,7 +12084,7 @@ char* CGUnit_C::GetUnitChosenTitle(char* buffer, uint32_t size, int32_t showTitl
 
     SStrPrintf(buffer, size, format, this->GetUnitName(nullptr, 1));
 
-    uint8_t medal = static_cast<CGPlayer_C*>(this)->m_player->m_playerBytes3[2];
+    uint8_t medal = static_cast<CGPlayer_C*>(this)->m_player->m_playerBytes2.m_pvpTitle;
 
     if (medal) {
         char token[32];
@@ -13432,7 +13432,7 @@ int32_t Packet_AuraUpdate(void* param, NETMESSAGE msgId, uint32_t time, CDataSto
 // OFFSET: 0x0071A670
 SkillLineAbilityRec* CGUnit_C::LookupAbility(int32_t spellId) {
     if (!this->m_creatureCacheEntry) {
-        return SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spellId);
+        return SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spellId);
     }
 
     SkillLineAbilityRec* ability = nullptr;
@@ -13683,7 +13683,7 @@ void CGUnit_C::SetSheatheState(uint32_t showWeapons, int32_t instant, int32_t no
     }
 
     if (showWeapons == 2 && (this->m_obj->m_type & TYPEMASK_PLAYER)) {
-        ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0[1]);
+        ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_class);
 
         if (!classRec || (classRec->m_flags & 0x8)) {
             return;
@@ -13737,7 +13737,7 @@ void CGUnit_C::ModifyPredictedPower(POWER_TYPE powerType, int32_t delta) {
         return;
     }
 
-    if (powerType != this->m_unit->m_unitFieldBytes0[3]) {
+    if (powerType != this->m_unit->m_unitFieldBytes0.m_powerType) {
         return;
     }
 
@@ -13828,18 +13828,18 @@ int32_t CGUnit_C::InitializeExtendedDisplay(CGPlayer_C* player, int32_t hasDispl
         data.m_preferences.m_raceID = this->m_displayInfoExtra->m_displayRaceID;
         data.m_preferences.m_sexID = this->m_displayInfoExtra->m_displaySexID;
     } else {
-        data.m_preferences.m_raceID = this->m_unit->m_unitFieldBytes0[0];
-        data.m_preferences.m_sexID = this->m_unit->m_unitFieldBytes0[2];
+        data.m_preferences.m_raceID = this->m_unit->m_unitFieldBytes0.m_race;
+        data.m_preferences.m_sexID = this->m_unit->m_unitFieldBytes0.m_gender;
     }
 
-    data.m_preferences.m_classId = this->m_unit->m_unitFieldBytes0[1];
+    data.m_preferences.m_classId = this->m_unit->m_unitFieldBytes0.m_class;
 
     if (player) {
-        data.m_preferences.m_skinID = player->m_player->m_playerBytes[0];
-        data.m_preferences.m_faceId = player->m_player->m_playerBytes[1];
-        data.m_preferences.m_hairStyleId = player->m_player->m_playerBytes[2];
-        data.m_preferences.m_hairColorId = player->m_player->m_playerBytes[3];
-        data.m_preferences.m_facialHairId = player->m_player->m_playerBytes2[0];
+        data.m_preferences.m_skinID = player->m_player->m_playerBytes0.m_skinID;
+        data.m_preferences.m_faceId = player->m_player->m_playerBytes0.m_faceID;
+        data.m_preferences.m_hairStyleId = player->m_player->m_playerBytes0.m_hairStyleID;
+        data.m_preferences.m_hairColorId = player->m_player->m_playerBytes0.m_hairColorID;
+        data.m_preferences.m_facialHairId = player->m_player->m_playerBytes1.m_facialStyle;
     } else {
         data.m_preferences.m_skinID = this->m_displayInfoExtra->m_skinID;
         data.m_preferences.m_faceId = this->m_displayInfoExtra->m_faceID;
@@ -15337,7 +15337,7 @@ bool CGUnit_C::IsInMyPartyOrRaid(const CGUnit_C* unit) const {
 // VERIFY: 0de3c03c auto
 // OFFSET: 0x0073C830
 void CGUnit_C::OnVisFlagChanged(uint8_t oldFlags) {
-    uint8_t changed = oldFlags ^ this->m_unit->m_unitFieldBytes1[2];
+    uint8_t changed = oldFlags ^ this->m_unit->m_unitFieldBytes1.m_visFlag;
 
     if (changed & 2) {
         this->UpdateBaseAnimation(0, -1);
@@ -15388,8 +15388,8 @@ const char* CGUnit_C::GetDisplayRaceName(const CGUnit_C* unit, const NameCache* 
     ChrRacesRec* rec;
 
     if (unit) {
-        rec = g_chrRacesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[0]);
-        sex = unit->m_unit->m_unitFieldBytes0[2];
+        rec = g_chrRacesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_race);
+        sex = unit->m_unit->m_unitFieldBytes0.m_gender;
     } else {
         if (!name) {
             if (displaySex) {
@@ -15419,7 +15419,7 @@ const char* CGUnit_C::GetDisplayRaceName(const CGUnit_C* unit, const NameCache* 
 int32_t CGUnit_C::GetDisplayRaceGender(const CGUnit_C* unit, const NameCache* name) {
     if (unit) {
         if (!(unit->m_obj->m_type & TYPEMASK_PLAYER)) {
-            return unit->m_unit->m_unitFieldBytes0[2];
+            return unit->m_unit->m_unitFieldBytes0.m_gender;
         }
     } else if (!name) {
         return 2;
@@ -15437,8 +15437,8 @@ const char* CGUnit_C::GetDisplayClassName(const CGUnit_C* unit, const NameCache*
     ChrClassesRec* rec;
 
     if (unit) {
-        rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[1]);
-        sex = unit->m_unit->m_unitFieldBytes0[2];
+        rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_class);
+        sex = unit->m_unit->m_unitFieldBytes0.m_gender;
     } else {
         if (!name) {
             if (displaySex) {
@@ -15468,7 +15468,7 @@ const char* CGUnit_C::GetDisplayClassName(const CGUnit_C* unit, const NameCache*
 int32_t CGUnit_C::GetDisplayClassGender(const CGUnit_C* unit, const NameCache* name) {
     if (unit) {
         if (!(unit->m_obj->m_type & TYPEMASK_PLAYER)) {
-            return unit->m_unit->m_unitFieldBytes0[2];
+            return unit->m_unit->m_unitFieldBytes0.m_gender;
         }
     } else if (!name) {
         return 2;
@@ -15830,7 +15830,7 @@ bool CGUnit_C::GetSpellRequiredLevel(int32_t spellId, int32_t* level) {
         return false;
     }
 
-    const SkillRaceClassInfoRec* info = SpellTableLookupInfo(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], ability->m_skillLine);
+    const SkillRaceClassInfoRec* info = SpellTableLookupInfo(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, ability->m_skillLine);
 
     if (info) {
         int32_t required = info->m_minLevel;
@@ -16392,8 +16392,8 @@ void CGUnit_C::ReleaseAurasBySpell(int32_t spellId) {
 // VERIFY: 0c11fba1 auto
 // OFFSET: 0x0071BB70
 float CGUnit_C::GetSpellChanceToCrit() const {
-    float base = GetGameTableValue(5, 0, this->m_unit->m_unitFieldBytes0[1] - 1);
-    float ratio = GetGameTableValue(4, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0[1] - 1);
+    float base = GetGameTableValue(5, 0, this->m_unit->m_unitFieldBytes0.m_class - 1);
+    float ratio = GetGameTableValue(4, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0.m_class - 1);
 
     if (ratio == 0.0f) {
         return 0.0f;
@@ -17390,7 +17390,7 @@ int32_t CGUnit_C::OnAttackIconPressed(WOWGUID target, int32_t a3) {
 // VERIFY: 96b12266 auto
 // OFFSET: 0x0072BAC0
 bool CGUnit_C::CheckShapeshiftRules(const SpellRec* spell, int32_t* reason) {
-    int32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2[3];
+    int32_t form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
 
     if (SpellRec::NotUsableInShapeshiftForm(spell, form - 1)) {
         if (!this->AffectedByAura(275, spell)) {
@@ -17401,7 +17401,7 @@ bool CGUnit_C::CheckShapeshiftRules(const SpellRec* spell, int32_t* reason) {
         return true;
     }
 
-    form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2[3];
+    form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
 
     if (SpellRec::UsableInShapeshift(spell, form - 1)) {
         return true;
@@ -17417,7 +17417,7 @@ bool CGUnit_C::CheckShapeshiftRules(const SpellRec* spell, int32_t* reason) {
             return true;
         }
 
-        form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2[3];
+        form = this->m_shapeshiftSuppressed ? 0 : this->m_unit->m_unitFieldBytes2.m_shapeshiftForm;
         SpellShapeshiftFormRec* shapeshift = g_spellShapeshiftFormDB.GetRecord(form);
 
         if (shapeshift && (shapeshift->m_flags & 0x400)) {
@@ -17933,10 +17933,10 @@ void CGUnit_C::DoPowerRegen(uint32_t elapsed) {
         return;
     }
 
-    POWER_TYPE powerType = static_cast<POWER_TYPE>(this->m_unit->m_unitFieldBytes0[3]);
+    POWER_TYPE powerType = static_cast<POWER_TYPE>(this->m_unit->m_unitFieldBytes0.m_powerType);
     this->DoPowerRegen(powerType, elapsed);
 
-    if (this->m_unit->m_unitFieldBytes0[1] == 11) {
+    if (this->m_unit->m_unitFieldBytes0.m_class == 11) {
         if (powerType) {
             this->DoPowerRegen(POWER_TYPE_MANA, elapsed);
         }
@@ -18077,7 +18077,7 @@ void CGUnit_C::OnDynamicFlagsChanged(uint32_t oldFlags) {
 
     if ((oldFlags ^ this->m_unit->m_unitDynamicFlags) & 0x20) {
         Script_SendUnitSignal(this->m_obj->m_guid, 18);
-        Script_SendUnitSignal(this->m_obj->m_guid, this->m_unit->m_unitFieldBytes0[3] + 19);
+        Script_SendUnitSignal(this->m_obj->m_guid, this->m_unit->m_unitFieldBytes0.m_powerType + 19);
 
         if (this->m_unit->m_unitDynamicFlags & 0x20) {
             this->OnDeath();
@@ -18850,7 +18850,7 @@ void CGUnit_C::PlayParryAnimation() {
 
     const CGUnitVirtualItem* item = this->GetVirtualItem(0, false);
 
-    if (!item || item->m_classID != 2 || !this->m_unit->m_unitFieldBytes2[0]) {
+    if (!item || item->m_classID != 2 || !this->m_unit->m_unitFieldBytes2.m_sheatheState) {
         this->PlayBaseAnimation(ANIM_PARRY_UNARMED, 0);
         return;
     }
@@ -19756,8 +19756,8 @@ CGUnit_C* CGUnit_C::GetVehicleUnit() const {
 // VERIFY: a1d87fb0 auto
 // OFFSET: 0x0071BAE0
 float CGUnit_C::GetMeleeChanceToCrit() const {
-    float base = GetGameTableValue(3, 0, this->m_unit->m_unitFieldBytes0[1] - 1);
-    float ratio = GetGameTableValue(2, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0[1] - 1);
+    float base = GetGameTableValue(3, 0, this->m_unit->m_unitFieldBytes0.m_class - 1);
+    float ratio = GetGameTableValue(2, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0.m_class - 1);
 
     if (ratio == 0.0f) {
         return 0.0f;
@@ -19773,7 +19773,7 @@ double CGUnit_C::GetHealthModifier() {
     if (this->m_unit->m_unitFieldPetnumber) {
         CGUnit_C* owner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_unit->m_unitFieldCreatedby, TYPEMASK_PLAYER, __FILE__, __LINE__));
 
-        if (owner && owner->m_unit->m_unitFieldBytes0[1] == 3) {
+        if (owner && owner->m_unit->m_unitFieldBytes0.m_class == 3) {
             return 1.0;
         }
     }
@@ -19794,7 +19794,7 @@ double CGUnit_C::GetPowerModifier() {
     if (this->m_unit->m_unitFieldPetnumber) {
         CGUnit_C* owner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_unit->m_unitFieldCreatedby, TYPEMASK_PLAYER, __FILE__, __LINE__));
 
-        if (owner && owner->m_unit->m_unitFieldBytes0[1] == 3) {
+        if (owner && owner->m_unit->m_unitFieldBytes0.m_class == 3) {
             return 1.0;
         }
     }
@@ -19814,7 +19814,7 @@ double CGUnit_C::GetPowerModifier() {
 float CGUnit_C::GetManaRegenRateFromSpirit() const {
     int32_t spirit = this->m_unit->m_unitFieldStat[4] < 0 ? 0 : this->m_unit->m_unitFieldStat[4];
     int32_t intellect = this->m_unit->m_unitFieldStat[3] < 0 ? 0 : this->m_unit->m_unitFieldStat[3];
-    return GetGameTableValue(10, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0[1] - 1) * sqrt(static_cast<double>(intellect)) * spirit;
+    return GetGameTableValue(10, this->m_unit->m_unitFieldLevel - 1, this->m_unit->m_unitFieldBytes0.m_class - 1) * sqrt(static_cast<double>(intellect)) * spirit;
 }
 
 // VERIFY: b1a33141 manual
@@ -19822,7 +19822,7 @@ float CGUnit_C::GetManaRegenRateFromSpirit() const {
 float CGUnit_C::GetHealthRegenRateFromSpirit() const {
     int32_t spirit = this->m_unit->m_unitFieldStat[4] < 0 ? 0 : this->m_unit->m_unitFieldStat[4];
     int32_t baseSpirit = spirit <= s_baseSpiritRegenCap ? spirit : s_baseSpiritRegenCap;
-    int32_t classIndex = this->m_unit->m_unitFieldBytes0[1] - 1;
+    int32_t classIndex = this->m_unit->m_unitFieldBytes0.m_class - 1;
     int32_t levelIndex = this->m_unit->m_unitFieldLevel - 1;
     float baseRatio = GetGameTableValue(7, levelIndex, classIndex);
     float ratio = GetGameTableValue(9, levelIndex, classIndex);
@@ -20340,7 +20340,7 @@ int32_t CGUnit_C::ShouldShowNamePlate(CGWorldFrame* worldFrame, C3Vector* positi
         friendly = !player->CanAttack(this);
     }
 
-    if (!friendly && (this->m_unit->m_unitFieldBytes1[2] & 0x2)) {
+    if (!friendly && (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2)) {
         return 0;
     }
 
@@ -20653,7 +20653,7 @@ void CGUnit_C::SetWeaponTrail(CM2Model* model, uint32_t hand) {
         return;
     }
 
-    uint32_t link = this->m_unit->m_unitFieldBytes2[0] ? (hand != 0) + 1 : CCharacterComponent::GetSheatheLink(static_cast<SHEATHE_TYPE>(item->m_sheatheType), hand == 0);
+    uint32_t link = this->m_unit->m_unitFieldBytes2.m_sheatheState ? (hand != 0) + 1 : CCharacterComponent::GetSheatheLink(static_cast<SHEATHE_TYPE>(item->m_sheatheType), hand == 0);
 
     for (CM2Model* attached = model->m_attachList; attached; attached = attached->m_attachNext) {
         if (attached->m_attachmentId == link) {
@@ -21497,7 +21497,7 @@ void CGUnit_C::PostShutdown() {
 // VERIFY: dc577adb manual
 // OFFSET: 0x00723A50
 void CGUnit_C::FootstepAnimEventHit(const C3Vector* position, int32_t left) {
-    if (this->m_unit->m_unitFieldPetnumber || (this->m_movement->m_flags & 0x40000000) || (this->m_unit->m_unitFieldBytes1[2] & 0x2) || this->GetTransportGUID()) {
+    if (this->m_unit->m_unitFieldPetnumber || (this->m_movement->m_flags & 0x40000000) || (this->m_unit->m_unitFieldBytes1.m_visFlag & 0x2) || this->GetTransportGUID()) {
         return;
     }
 
@@ -21748,7 +21748,7 @@ CM2Model* CGUnit_C::CreateItemModel(uint32_t displayId, uint32_t inventoryType, 
     char fileName[260];
 
     if (inventoryType == 1) {
-        int32_t sex = this->m_displayInfoExtra ? this->m_displayInfoExtra->m_displaySexID : this->m_unit->m_unitFieldBytes0[2];
+        int32_t sex = this->m_displayInfoExtra ? this->m_displayInfoExtra->m_displaySexID : this->m_unit->m_unitFieldBytes0.m_gender;
         ChrRacesRec* race = g_chrRacesDB.GetRecord(sex);
 
         if (!race) {
@@ -21876,7 +21876,7 @@ void CGUnit_C::CancelShapeshift() {
         return;
     }
 
-    if (!this->m_unit->m_unitFieldBytes2[3]) {
+    if (!this->m_unit->m_unitFieldBytes2.m_shapeshiftForm) {
         return;
     }
 
@@ -23627,7 +23627,7 @@ void CGUnit_C::FillPartyMemberPetState(CGPartyPetState* state) {
     state->m_displayId = this->m_unit->m_unitFieldDisplayid;
     state->m_health = this->m_unit->m_unitFieldHealth;
     state->m_maxHealth = this->m_unit->m_unitFieldMaxhealth;
-    uint8_t powerType = this->m_unit->m_unitFieldBytes0[3];
+    uint8_t powerType = this->m_unit->m_unitFieldBytes0.m_powerType;
     state->m_powerType = powerType;
     state->m_power = this->m_unit->m_unitFieldPower[powerType];
     state->m_maxPower = this->m_unit->m_unitFieldMaxpower[powerType];

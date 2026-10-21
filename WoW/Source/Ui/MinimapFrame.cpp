@@ -673,7 +673,7 @@ void CGMinimapFrame::InitializeGame() {
 int32_t CGMinimapFrame::CountAvailableTrackingTypes() {
     int32_t count = 0;
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-    uint32_t classMask = player ? 1 << player->m_unit->m_unitFieldBytes0[1] : 0;
+    uint32_t classMask = player ? 1 << player->m_unit->m_unitFieldBytes0.m_class : 0;
 
     for (uint32_t i = 0; i < sizeof(CGMinimapFrame::s_trackingTypes) / sizeof(CGMinimapFrame::s_trackingTypes[0]); i++) {
         uint32_t mask = CGMinimapFrame::s_trackingTypes[i].m_classMask;
@@ -691,7 +691,7 @@ int32_t CGMinimapFrame::CountAvailableTrackingTypes() {
 const TrackingTypeInfo* CGMinimapFrame::GetTrackingTypeByIndex(int32_t index) {
     int32_t count = 0;
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-    uint32_t classMask = player ? 1 << player->m_unit->m_unitFieldBytes0[1] : 0;
+    uint32_t classMask = player ? 1 << player->m_unit->m_unitFieldBytes0.m_class : 0;
 
     for (uint32_t i = 0; i < sizeof(CGMinimapFrame::s_trackingTypes) / sizeof(CGMinimapFrame::s_trackingTypes[0]); i++) {
         uint32_t mask = CGMinimapFrame::s_trackingTypes[i].m_classMask;
@@ -2389,7 +2389,7 @@ static void SetMemberData(WOWGUID guid, MEMBERINFO* member, CGPlayer_C* player, 
         dx = dx - unit->GetPosition().x;
         dy = dy - unit->GetPosition().y;
         position = unit->GetPosition();
-        member->m_class = unit->m_unit->m_unitFieldBytes0[1];
+        member->m_class = unit->m_unit->m_unitFieldBytes0.m_class;
     } else {
         if (guid == player->m_obj->m_guid) {
             member->m_offMap = 0;

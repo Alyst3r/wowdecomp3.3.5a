@@ -171,7 +171,7 @@ static int32_t Script_UnitRace(lua_State* L) {
         CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
         if (unit) {
-            rec = g_chrRacesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[0]);
+            rec = g_chrRacesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_race);
             name = CGUnit_C::GetDisplayRaceName(unit, nullptr);
         } else {
             NameCache* nameCache = g_nameDBCache.GetRecord(guid.m_guid, WOWGUID(), nullptr, nullptr, false);
@@ -219,7 +219,7 @@ static int32_t Script_UnitClass(lua_State* L) {
         CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
         if (unit) {
-            rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[1]);
+            rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_class);
             name = CGUnit_C::GetDisplayClassName(unit, nullptr);
         } else {
             NameCache* nameCache = g_nameDBCache.GetRecord(guid.m_guid, WOWGUID(), nullptr, nullptr, false);
@@ -598,7 +598,7 @@ static int32_t Script_UnitSex(lua_State* L) {
         CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
         if (unit) {
-            sex = s_unitSexValues[unit->m_unit->m_unitFieldBytes0[2]];
+            sex = s_unitSexValues[unit->m_unit->m_unitFieldBytes0.m_gender];
         } else {
             NameCache* nameCache = g_nameDBCache.GetRecord(guid.m_guid, WOWGUID(), nullptr, nullptr, false);
             sex = nameCache ? s_unitSexValues[nameCache->m_sex] : 1;
@@ -906,10 +906,10 @@ static int32_t Script_UnitPower(lua_State* L) {
 
     if (unit) {
         if (powerType == 7) {
-            powerType = unit->m_unit->m_unitFieldBytes0[3];
+            powerType = unit->m_unit->m_unitFieldBytes0.m_powerType;
         }
 
-        if ((!(unit->m_unit->m_unitDynamicFlags & 0x20) || CGGameUI::IsRaidMemberOrPet(unit->m_obj->m_guid)) && (powerType == unit->m_unit->m_unitFieldBytes0[3] || unit->IsActivePlayer())) {
+        if ((!(unit->m_unit->m_unitDynamicFlags & 0x20) || CGGameUI::IsRaidMemberOrPet(unit->m_obj->m_guid)) && (powerType == unit->m_unit->m_unitFieldBytes0.m_powerType || unit->IsActivePlayer())) {
             power = static_cast<uint32_t>(unit->GetPredictedPower(static_cast<POWER_TYPE>(powerType))) / Spell_C_GetPowerDisplayMod(static_cast<POWER_TYPE>(powerType));
         }
     } else if (CGPartyMemberState* state = CGPartyMemberStateRepository::GetState(unitGuid)) {
@@ -953,7 +953,7 @@ static int32_t Script_UnitPowerMax(lua_State* L) {
 
     if (unit) {
         if (powerType == 7) {
-            powerType = unit->m_unit->m_unitFieldBytes0[3];
+            powerType = unit->m_unit->m_unitFieldBytes0.m_powerType;
         }
 
         power = unit->m_unit->m_unitFieldMaxpower[powerType] / Spell_C_GetPowerDisplayMod(static_cast<POWER_TYPE>(powerType));
@@ -993,7 +993,7 @@ static int32_t Script_UnitPowerType(lua_State* L) {
     if (unit && unit->m_vehicle && unit->m_vehicle->m_vehicleRec && (unit->m_vehicle->m_vehicleRec->m_flags & 0x100000) && index < 3) {
         PowerDisplayRec* display = g_powerDisplayDB.GetRecord(unit->m_vehicle->m_vehicleRec->m_powerDisplayID[index]);
 
-        if (display && display->m_actualType == unit->m_unit->m_unitFieldBytes0[3]) {
+        if (display && display->m_actualType == unit->m_unit->m_unitFieldBytes0.m_powerType) {
             lua_pushnumber(L, display->m_actualType);
             lua_pushstring(L, display->m_globalStringBaseTag);
             lua_pushnumber(L, static_cast<uint8_t>(display->m_red) * 0.0039215689f);
@@ -1005,8 +1005,8 @@ static int32_t Script_UnitPowerType(lua_State* L) {
 
     if (!index) {
         if (unit) {
-            lua_pushnumber(L, unit->m_unit->m_unitFieldBytes0[3]);
-            lua_pushstring(L, GetPowerString(static_cast<POWER_TYPE>(unit->m_unit->m_unitFieldBytes0[3])));
+            lua_pushnumber(L, unit->m_unit->m_unitFieldBytes0.m_powerType);
+            lua_pushstring(L, GetPowerString(static_cast<POWER_TYPE>(unit->m_unit->m_unitFieldBytes0.m_powerType)));
             return 2;
         }
 
@@ -1296,7 +1296,7 @@ static int32_t Script_IsSwimming(lua_State* L) {
 static int32_t Script_IsStealthed(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
-    if (player && (player->m_unit->m_unitFieldBytes1[2] & 2)) {
+    if (player && (player->m_unit->m_unitFieldBytes1.m_visFlag & 2)) {
         lua_pushnumber(L, 1.0);
     } else {
         lua_pushnil(L);
@@ -1599,7 +1599,7 @@ static int32_t Script_UnitIsPVPSanctuary(lua_State* L) {
     WOWGUID guid;
     CGUnit_C* unit;
 
-    if (Script_GetGUIDFromToken(token, guid, false) && (unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__))) && (unit->m_unit->m_unitFieldBytes2[1] & 8)) {
+    if (Script_GetGUIDFromToken(token, guid, false) && (unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__))) && (unit->m_unit->m_unitFieldBytes2.m_pvpFlag & 8)) {
         lua_pushnumber(L, 1.0);
     } else {
         lua_pushnil(L);
@@ -1898,7 +1898,7 @@ static int32_t Script_UnitReaction(lua_State* L) {
 static int32_t Script_GetManaRegen(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
-    if (!player || player->m_unit->m_unitFieldBytes0[3]) {
+    if (!player || player->m_unit->m_unitFieldBytes0.m_powerType) {
         lua_pushnumber(L, 0.0);
         lua_pushnumber(L, 0.0);
         return 2;
@@ -1915,7 +1915,7 @@ static int32_t Script_GetPowerRegen(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
     if (player) {
-        uint8_t powerType = player->m_unit->m_unitFieldBytes0[3];
+        uint8_t powerType = player->m_unit->m_unitFieldBytes0.m_powerType;
         lua_pushnumber(L, player->GetPowerRegen(static_cast<POWER_TYPE>(powerType), false) + 0.001f);
         lua_pushnumber(L, player->GetPowerRegen(static_cast<POWER_TYPE>(powerType), true) + 0.001f);
     } else {
@@ -2150,7 +2150,7 @@ static int32_t Script_UnitHasRelicSlot(lua_State* L) {
     CGUnit_C* unit = GetUnitFromName(lua_tolstring(L, 1, nullptr));
     ChrClassesRec* rec;
 
-    if (unit && (unit->m_obj->m_type & TYPEMASK_PLAYER) && (rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[1])) && (rec->m_flags & 8)) {
+    if (unit && (unit->m_obj->m_type & TYPEMASK_PLAYER) && (rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_class)) && (rec->m_flags & 8)) {
         lua_pushnumber(L, 1.0);
     } else {
         lua_pushnil(L);
@@ -2199,7 +2199,7 @@ static int32_t Script_UnitIsPVPFreeForAll(lua_State* L) {
     uint32_t ffa;
 
     if (object && (object->m_obj->m_type & TYPEMASK_UNIT)) {
-        ffa = static_cast<CGUnit_C*>(object)->m_unit->m_unitFieldBytes2[1] >> 2;
+        ffa = static_cast<CGUnit_C*>(object)->m_unit->m_unitFieldBytes2.m_pvpFlag >> 2;
     } else {
         CGPartyMemberState* state = CGPartyMemberStateRepository::GetState(stateGuid);
 
@@ -2571,7 +2571,7 @@ static int32_t Script_UnitLevel(lua_State* L) {
 
         if ((player && unit->UnitReaction(player) <= UNIT_REACTION_HOSTILE && static_cast<int32_t>(player->m_unit->m_unitFieldLevel) <= static_cast<int32_t>(unit->m_unit->m_unitFieldLevel) - 10) || unit->IsBossMob()) {
             level = -1;
-        } else if (level > 0 && player && (player->m_player->m_playerBytes3[1] || player->m_player->m_playerFakeInebriation) && player->CanAttack(unit)) {
+        } else if (level > 0 && player && (player->m_player->m_playerBytes2.m_inebriation || player->m_player->m_playerFakeInebriation) && player->CanAttack(unit)) {
             level -= RoundToInt64(player->GetDrunknessTurnValue() * 5.0f);
 
             if (level < 1) {
@@ -2887,7 +2887,7 @@ static int32_t Script_GetComboPoints(lua_State* L) {
 
     if (unit == ClntObjMgrGetActivePlayer()) {
         CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-        uint8_t classId = player ? player->m_unit->m_unitFieldBytes0[1] : 0;
+        uint8_t classId = player ? player->m_unit->m_unitFieldBytes0.m_class : 0;
 
         if (!player || classId == 4 || classId == 11) {
             points = CGGameUI::GetComboPoints(target);
@@ -3071,7 +3071,7 @@ static int32_t Script_UnitIsPVP(lua_State* L) {
     bool pvp;
 
     if (object && (object->m_obj->m_type & TYPEMASK_UNIT)) {
-        pvp = static_cast<CGUnit_C*>(object)->m_unit->m_unitFieldBytes2[1] & 1;
+        pvp = static_cast<CGUnit_C*>(object)->m_unit->m_unitFieldBytes2.m_pvpFlag & 1;
     } else if (object && (object->m_obj->m_type & TYPEMASK_CORPSE)) {
         pvp = static_cast<CGCorpse_C*>(object)->m_corpse->m_corpseFieldFlags & 4;
     } else {
@@ -3703,7 +3703,7 @@ static int32_t Script_UnitClassBase(lua_State* L) {
         CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
         if (unit) {
-            rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0[1]);
+            rec = g_chrClassesDB.GetRecord(unit->m_unit->m_unitFieldBytes0.m_class);
         } else {
             WOWGUID none = WOWGUID();
             NameCache* record = g_nameDBCache.GetRecord(guid.m_guid, none, nullptr, nullptr, false);
@@ -3821,7 +3821,7 @@ static int32_t Script_GetResSicknessDuration(lua_State* L) {
     int32_t spellId = 15007;
 
     if (player) {
-        ChrRacesRec* race = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0[0]);
+        ChrRacesRec* race = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_race);
         level = player->m_unit->m_unitFieldLevel;
 
         if (race) {

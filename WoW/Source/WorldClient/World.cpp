@@ -4407,7 +4407,7 @@ void CWorldScene::RenderEntitys() {
                     CWorldScene::RequestModelStreaming(model, &info.m_bounds);
                 }
             } else {
-                if ((entity->m_staticFlags & 0x800) && unit->m_unit->m_unitFieldBytes1[0] != 9) {
+                if ((entity->m_staticFlags & 0x800) && unit->m_unit->m_unitFieldBytes1.m_standState != 9) {
                     CAaBox standBox = unit->GetStandBox();
                     CWorldScene::RequestModelStreaming(model, &standBox);
                 }

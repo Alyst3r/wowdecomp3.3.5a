@@ -10,6 +10,30 @@
 class CGUnitData;
 class CMovement_C;
 
+struct UnitBytes0
+{
+    uint8_t m_race;
+    uint8_t m_class;
+    uint8_t m_gender;
+    uint8_t m_powerType;
+};
+
+struct UnitBytes1
+{
+    uint8_t m_standState;
+    uint8_t m_petTalents;
+    uint8_t m_visFlag;
+    uint8_t m_animTier;
+};
+
+struct UnitBytes2
+{
+    uint8_t m_sheatheState;
+    uint8_t m_pvpFlag;
+    uint8_t m_petFlags;
+    uint8_t m_shapeshiftForm;
+};
+
 class CGUnit {
     public:
     int32_t GetQuestGreenRange() const;
@@ -60,7 +84,7 @@ class CGUnitData {
     /* 0030 */ WOWGUID m_unitFieldTarget;
     /* 0038 */ WOWGUID m_unitFieldChannelObject;
     /* 0040 */ uint32_t m_unitChannelSpell;
-    /* 0044 */ uint8_t m_unitFieldBytes0 [4];
+    /* 0044 */ UnitBytes0 m_unitFieldBytes0;
     /* 0048 */ int32_t m_unitFieldHealth;
     /* 004C */ uint32_t m_unitFieldPower [7];
     /* 0068 */ uint32_t m_unitFieldMaxhealth;
@@ -84,7 +108,7 @@ class CGUnitData {
     /* 0104 */ float m_unitFieldMaxdamage;
     /* 0108 */ float m_unitFieldMinoffhanddamage;
     /* 010C */ float m_unitFieldMaxoffhanddamage;
-    /* 0110 */ uint8_t m_unitFieldBytes1 [4];
+    /* 0110 */ UnitBytes1 m_unitFieldBytes1;
     /* 0114 */ uint32_t m_unitFieldPetnumber;
     /* 0118 */ uint32_t m_unitFieldPetNameTimestamp;
     /* 011C */ uint32_t m_unitFieldPetexperience;
@@ -102,7 +126,7 @@ class CGUnitData {
     /* 01AC */ int32_t m_unitFieldResistancebuffmodsnegative [7];
     /* 01C8 */ uint32_t m_unitFieldBaseMana;
     /* 01CC */ uint32_t m_unitFieldBaseHealth;
-    /* 01D0 */ uint8_t m_unitFieldBytes2 [4];
+    /* 01D0 */ UnitBytes2 m_unitFieldBytes2;
     /* 01D4 */ int32_t m_unitFieldAttackPower;
     /* 01D8 */ int16_t m_unitFieldAttackPowerMods [2];
     /* 01DC */ float m_unitFieldAttackPowerMultiplier;

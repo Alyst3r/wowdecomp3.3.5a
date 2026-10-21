@@ -3039,7 +3039,7 @@ void CGChat::LogXPGain(CGUnit_C* unit, int32_t amount, int32_t type, int32_t bon
             return;
         }
 
-        uint32_t restState = player->m_player->m_playerBytes2[3];
+        uint32_t restState = player->m_player->m_playerBytes1.m_restState;
 
         if (referAFriend) {
             restState = 6;
@@ -6191,7 +6191,7 @@ int32_t CGChat::OnTitleEarned(void* param, NETMESSAGE msgId, uint32_t time, CDat
 
     char name[256];
 
-    if (player->m_player->m_playerBytes3[0] == 1) {
+    if (player->m_player->m_playerBytes2.m_gender == 1) {
         if (strcmp(title->m_name1, "")) {
             SStrPrintf(name, sizeof(name), title->m_name1, player->GetUnitName(nullptr, 1));
         } else {

@@ -515,7 +515,7 @@ static int32_t OnUpdatePlayerHairColor(WOWGUID guid, uint32_t fieldOffset, uint3
 
     if (player) {
         if (player->m_characterComponent) {
-            player->m_characterComponent->SetHairColor(player->m_player->m_playerBytes[3], true, nullptr);
+            player->m_characterComponent->SetHairColor(player->m_player->m_playerBytes0.m_hairColorID, true, nullptr);
         }
 
         if (ClntObjMgrGetActivePlayer() == guid) {
@@ -536,7 +536,7 @@ static int32_t OnUpdatePlayerSkinID(WOWGUID guid, uint32_t fieldOffset, uint32_t
 
     if (player) {
         if (player->m_characterComponent) {
-            player->m_characterComponent->SetSkinColor(player->m_player->m_playerBytes[0], true, false, nullptr);
+            player->m_characterComponent->SetSkinColor(player->m_player->m_playerBytes0.m_skinID, true, false, nullptr);
         }
 
         if (ClntObjMgrGetActivePlayer() == guid) {
@@ -560,7 +560,7 @@ static int32_t OnUpdatePlayerHairStyle(WOWGUID guid, uint32_t fieldOffset, uint3
         CCharacterComponent* component = player->m_characterComponent;
 
         if (component) {
-            component->SetHairStyle(player->m_player->m_playerBytes[2], nullptr);
+            component->SetHairStyle(player->m_player->m_playerBytes0.m_hairStyleID, nullptr);
 
             if (!(player->m_player->m_playerFlags & 0x400) && (!activePlayer || !CGBarberShop::m_barberShopEnabled)) {
                 VisibleItem_C* head = &player->m_player->m_playerVisibleItems[0];
@@ -592,7 +592,7 @@ static int32_t OnUpdatePlayerFacialStyle(WOWGUID guid, uint32_t fieldOffset, uin
         CCharacterComponent* component = player->m_characterComponent;
 
         if (component) {
-            component->SetBeardStyle(player->m_player->m_playerBytes2[0], true, nullptr);
+            component->SetBeardStyle(player->m_player->m_playerBytes1.m_facialStyle, true, nullptr);
 
             if (!(player->m_player->m_playerFlags & 0x400) && (!activePlayer || !CGBarberShop::m_barberShopEnabled)) {
                 VisibleItem_C* head = &player->m_player->m_playerVisibleItems[0];
@@ -808,13 +808,13 @@ void CGPlayer_C::Initialize() {
     ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerDuelTeam), sizeof(uint32_t), DuelTeamUpdateHandler, nullptr, HANDLER_PRIORITY_NORMAL, 0);
     ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerFlags), sizeof(uint32_t), OnUpdatePlayerFlags, nullptr, HANDLER_PRIORITY_NORMAL, 0);
     ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerGuildTimestamp), sizeof(uint32_t), OnUpdateGuildTimeStamp, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes3) + 2, sizeof(uint8_t), OnUpdatePVPTitle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes3) + 1, sizeof(uint8_t), OnUpdateInebriation, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2) + 2, sizeof(uint8_t), OnUpdatePVPTitle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2) + 1, sizeof(uint8_t), OnUpdateInebriation, nullptr, HANDLER_PRIORITY_NORMAL, 0);
     ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerChosenTitle), sizeof(uint32_t), OnUpdatePVPTitle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes) + 3, sizeof(uint8_t), OnUpdatePlayerHairColor, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes) + 2, sizeof(uint8_t), OnUpdatePlayerHairStyle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2), sizeof(uint8_t), OnUpdatePlayerFacialStyle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
-    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes), sizeof(uint8_t), OnUpdatePlayerSkinID, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes0) + 3, sizeof(uint8_t), OnUpdatePlayerHairColor, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes0) + 2, sizeof(uint8_t), OnUpdatePlayerHairStyle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes1), sizeof(uint8_t), OnUpdatePlayerFacialStyle, nullptr, HANDLER_PRIORITY_NORMAL, 0);
+    ClntObjMgrSetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes0), sizeof(uint8_t), OnUpdatePlayerSkinID, nullptr, HANDLER_PRIORITY_NORMAL, 0);
 }
 
 // VERIFY: 22f04900 manual
@@ -842,12 +842,12 @@ void CGPlayer_C::Shutdown() {
     ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerDuelTeam), DuelTeamUpdateHandler, nullptr);
     ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerFlags), OnUpdatePlayerFlags, nullptr);
     ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerGuildTimestamp), OnUpdateGuildTimeStamp, nullptr);
-    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes3) + 2, OnUpdatePVPTitle, nullptr);
-    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes3) + 1, OnUpdateInebriation, nullptr);
+    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2) + 2, OnUpdatePVPTitle, nullptr);
+    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2) + 1, OnUpdateInebriation, nullptr);
     ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerChosenTitle), OnUpdatePVPTitle, nullptr);
-    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes) + 3, OnUpdatePlayerHairColor, nullptr);
-    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes) + 2, OnUpdatePlayerHairStyle, nullptr);
-    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes2), OnUpdatePlayerFacialStyle, nullptr);
+    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes0) + 3, OnUpdatePlayerHairColor, nullptr);
+    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes0) + 2, OnUpdatePlayerHairStyle, nullptr);
+    ClntObjMgrUnsetTypeMirrorHandler(ID_PLAYER, offsetof(CGPlayerData, m_playerBytes1), OnUpdatePlayerFacialStyle, nullptr);
 }
 
 // VERIFY: 78b02f45 auto
@@ -1193,7 +1193,7 @@ const char* CGPlayer_C::GetHairCustomizationName() {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
     if (player) {
-        ChrRacesRec* rec = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0[0]);
+        ChrRacesRec* rec = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_race);
 
         if (rec) {
             return rec->m_hairCustomization;
@@ -1209,10 +1209,10 @@ const char* CGPlayer_C::GetFacialHairCustomizationName() {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
 
     if (player) {
-        ChrRacesRec* rec = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0[0]);
+        ChrRacesRec* rec = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_race);
 
         if (rec) {
-            return rec->m_facialHairCustomization[player->m_player->m_playerBytes3[0]];
+            return rec->m_facialHairCustomization[player->m_player->m_playerBytes2.m_gender];
         }
     }
 
@@ -1920,7 +1920,7 @@ void __stdcall CGPlayer_C::ReadItem(uint8_t bag, uint8_t slot) {
 // VERIFY: 9f933d46 auto
 // OFFSET: 0x006D5E70
 uint32_t CGPlayer_C::GetDefaultLanguage() const {
-    ChrRacesRec* rec = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0[0]);
+    ChrRacesRec* rec = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_race);
 
     return rec ? rec->m_baseLanguage : 0;
 }
@@ -1980,7 +1980,7 @@ uint32_t CGPlayer_C::GetClientStandState() const {
         return this->m_clientStandState;
     }
 
-    return this->m_unit->m_unitFieldBytes1[0];
+    return this->m_unit->m_unitFieldBytes1.m_standState;
 }
 
 // VERIFY: ed967909 auto
@@ -2027,7 +2027,7 @@ void __stdcall CGPlayer_C::RequestPetitionSignatures(WOWGUID petition) {
 // VERIFY: 1f8b3e30 auto
 // OFFSET: 0x006D6E90
 int32_t CGPlayer_C::GetPVPFactionIndex() const {
-    ChrRacesRec* raceRec = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0[0]);
+    ChrRacesRec* raceRec = g_chrRacesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_race);
 
     if (!raceRec) {
         return -1;
@@ -2601,7 +2601,7 @@ bool CGPlayer_C::CanTrackUnit(const CGUnit_C* unit) {
         return false;
     }
 
-    uint8_t flags = unit->m_unit->m_unitFieldBytes1[2];
+    uint8_t flags = unit->m_unit->m_unitFieldBytes1.m_visFlag;
 
     if (flags & 0x4) {
         return false;
@@ -2850,7 +2850,7 @@ void CGPlayer_C::SetStorage(uint32_t* storage, uint32_t* saved) {
 // VERIFY: aa03190b auto
 // OFFSET: 0x006E8280
 void CGPlayer_C::PostInit(uint32_t time, const CClientObjCreate& create, bool reenable) {
-    this->m_clientStandState = this->m_unit->m_unitFieldBytes1[0];
+    this->m_clientStandState = this->m_unit->m_unitFieldBytes1.m_standState;
     this->CGUnit_C::PostInit(time, create, reenable);
     this->GetUnitName(nullptr, 1);
     this->OnGuildChanged(0);
@@ -2860,7 +2860,7 @@ void CGPlayer_C::PostInit(uint32_t time, const CClientObjCreate& create, bool re
     CGPartyInfo::EnableMember(this, 1);
     CGRaidInfo::EnableMember(this, 1);
 
-    if (CGBattlefieldInfo::m_instanceType == 4 && this->m_player->m_playerBytes3[3] != CGBattlefieldInfo::m_arenaFaction) {
+    if (CGBattlefieldInfo::m_instanceType == 4 && this->m_player->m_playerBytes2.m_arenaFaction != CGBattlefieldInfo::m_arenaFaction) {
         WOWGUID guid = this->m_obj->m_guid;
         CGBattlefieldInfo::AddArenaOpponent(guid);
 
@@ -2885,7 +2885,7 @@ void CGPlayer_C::PostInit(uint32_t time, const CClientObjCreate& create, bool re
 // VERIFY: 5414e18a auto
 // OFFSET: 0x006E6150
 void CGPlayer_C::Reenable() {
-    this->m_clientStandState = this->m_unit->m_unitFieldBytes1[0];
+    this->m_clientStandState = this->m_unit->m_unitFieldBytes1.m_standState;
     this->CGUnit_C::Reenable();
     this->m_pendingItemCacheCount = 0;
 
@@ -2902,7 +2902,7 @@ void CGPlayer_C::PostReenable() {
     CGPartyInfo::EnableMember(this, 1);
     CGRaidInfo::EnableMember(this, 1);
 
-    if (CGBattlefieldInfo::m_instanceType == 4 && this->m_player->m_playerBytes3[3] != CGBattlefieldInfo::m_arenaFaction) {
+    if (CGBattlefieldInfo::m_instanceType == 4 && this->m_player->m_playerBytes2.m_arenaFaction != CGBattlefieldInfo::m_arenaFaction) {
         WOWGUID guid = this->m_obj->m_guid;
         CGBattlefieldInfo::AddArenaOpponent(guid);
 
@@ -3045,7 +3045,7 @@ static int32_t AuraVisionUpdateHandler(WOWGUID guid, void* param) {
 void CGPlayer_C::PostInitActivePlayer() {
     this->m_movementData.m_flags |= 0x200;
     this->SetActiveMirrorHandlers();
-    SI2::InitVocalErrorSounds(this->m_unit->m_unitFieldBytes0[0], this->m_player->m_playerBytes3[0]);
+    SI2::InitVocalErrorSounds(this->m_unit->m_unitFieldBytes0.m_race, this->m_player->m_playerBytes2.m_gender);
     CGSpellBook::ClearSpells();
 
     for (uint32_t i = 0; i < s_initialSpells.Count(); i++) {
@@ -3119,7 +3119,7 @@ void CGPlayer_C::PostInitActivePlayer() {
         LoadingScreenDisable();
     }
 
-    Spell_C_SetPlayerClass(this->m_unit->m_unitFieldBytes0[1]);
+    Spell_C_SetPlayerClass(this->m_unit->m_unitFieldBytes0.m_class);
     this->CountEquippedGems();
 
     if (this->m_player->m_playerFlags & 0x200) {
@@ -3579,7 +3579,7 @@ int32_t Packet_SMSG_EMOTE(void* param, NETMESSAGE msgId, uint32_t time, CDataSto
     msg->Get(guid.m_guid);
     CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
-    if (unit && unit->m_unit->m_unitFieldBytes1[0] != 3 && !(unit->m_movement->m_flags & 0x200000)) {
+    if (unit && unit->m_unit->m_unitFieldBytes1.m_standState != 3 && !(unit->m_movement->m_flags & 0x200000)) {
         unit->PlayEmoteAnimation(emote);
     }
 
@@ -4713,7 +4713,7 @@ int32_t CGPlayer_C::GetLanguageSkill(uint32_t language, uint32_t& skill) {
         return 0;
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], languageSpell);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, languageSpell);
 
     if (!ability) {
         return 0;
@@ -4768,7 +4768,7 @@ void CGPlayer_C::AddKnownSpell(int32_t spellId, int32_t a2, int32_t a3, int32_t 
         return;
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spellId);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spellId);
     SkillLineRec* skillLine = ability ? g_skillLineDB.GetRecord(ability->m_skillLine) : nullptr;
 
     if (skillLine && skillLine->m_id == 778) {
@@ -6897,7 +6897,7 @@ int32_t CGPlayer_C::CanUseItem(const ItemStats_C* stats, int32_t& error) {
 
     CGUnitData* unit = this->m_unit;
 
-    if (static_cast<int32_t>(stats->m_requiredLevel) > static_cast<int32_t>(unit->m_unitFieldLevel) || !((1 << (unit->m_unitFieldBytes0[1] - 1)) & stats->m_allowableClass) || !((1 << (unit->m_unitFieldBytes0[0] - 1)) & stats->m_allowableRace)) {
+    if (static_cast<int32_t>(stats->m_requiredLevel) > static_cast<int32_t>(unit->m_unitFieldLevel) || !((1 << (unit->m_unitFieldBytes0.m_class - 1)) & stats->m_allowableClass) || !((1 << (unit->m_unitFieldBytes0.m_race - 1)) & stats->m_allowableRace)) {
         error = ERR_CANT_USE_ITEM;
         return 0;
     }
@@ -7971,7 +7971,7 @@ void CGPlayer_C::DelKnownSpell(int32_t spellId, int32_t silent) {
     bool notify = silent == 0;
 
     if (spell.m_attributes & 0x20) {
-        SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spellId);
+        SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spellId);
         SkillLineRec* skillLine = ability ? g_skillLineDB.GetRecord(ability->m_skillLine) : nullptr;
 
         if (skillLine) {
@@ -8232,7 +8232,7 @@ void CGPlayer_C::ToggleSheathe() {
     const CGUnitVirtualItem* mainHand = this->GetVirtualItem(0, false);
     const CGUnitVirtualItem* offHand = this->GetVirtualItem(1, false);
     const CGUnitVirtualItem* ranged = this->GetVirtualItem(2, false);
-    ChrClassesRec* playerClass = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0[1]);
+    ChrClassesRec* playerClass = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_class);
 
     if (!playerClass || (playerClass->m_flags & 0x8)) {
         ranged = nullptr;
@@ -8316,7 +8316,7 @@ void CGPlayer_C::MeleeModeEnter(const WOWGUID& target) {
 
     Spell_C_CancelRangedSpells();
 
-    if (this->m_unit->m_unitFieldBytes1[0]) {
+    if (this->m_unit->m_unitFieldBytes1.m_standState) {
         this->ChangeStandState(0);
     }
 
@@ -8886,7 +8886,7 @@ int32_t SkillRankChangeHandler(WOWGUID guid, uint32_t offset, uint32_t count, co
         ConsolePrintf("Skill %d increased from %d to %d", player->GetSkillLineID(index), newRank, oldRank);
         PlayerSignalSkillStatChanges();
         SkillLineRec* skillLine = g_skillLineDB.GetRecord(player->GetSkillLineID(index));
-        const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0[0], player->m_unit->m_unitFieldBytes0[1], player->GetSkillLineID(index));
+        const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0.m_race, player->m_unit->m_unitFieldBytes0.m_class, player->GetSkillLineID(index));
 
         if (skillLine) {
             if (info && !(info->m_flags & 0x402)) {
@@ -9429,7 +9429,7 @@ int32_t Packet_Group_9(void* param, NETMESSAGE msgId, uint32_t time, CDataStore*
                 return 1;
             }
 
-            ChrRacesRec* race = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0[0]);
+            ChrRacesRec* race = g_chrRacesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_race);
 
             if (race && race->m_explorationSoundID) {
                 SI2::PlaySoundKit(race->m_explorationSoundID, nullptr, nullptr, nullptr, 0, nullptr, 1, 0);
@@ -10108,7 +10108,7 @@ int32_t CGPlayer_C::ValidateSlot(uint32_t slot, WOWGUID item) {
         return 0;
     }
 
-    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0[1]);
+    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_class);
 
     if (classRec && (classRec->m_flags & 0x8)) {
         return itemObject->CanGoInSlot(slot, 1);
@@ -10452,7 +10452,7 @@ void CGPlayer_C::GetRangedAttackSkillRank(int32_t& rank, int32_t& bonus) {
         }
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spellId);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spellId);
 
     if (ability && ability->m_spell == spellId) {
         this->GetExpandedSkillRank(ability->m_skillLine, rank, bonus);
@@ -10684,7 +10684,7 @@ int32_t CGItem::GetEnchantmentCharges(int32_t slot) {
 // VERIFY: a2058e4d manual
 // OFFSET: 0x006D7070
 int32_t CGPlayer_C::GetAttackPowerContributionFromStat(int32_t stat, int32_t value) {
-    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0[1]);
+    ChrClassesRec* classRec = g_chrClassesDB.GetRecord(this->m_unit->m_unitFieldBytes0.m_class);
 
     if (!classRec) {
         return 0;
@@ -10719,7 +10719,7 @@ int32_t CGPlayer_C::GetAttackPowerContributionFromStat(int32_t stat, int32_t val
 // OFFSET: 0x006DE410
 float CGPlayer_C::GetCombatRatingPct(int32_t rating) {
     float base = GetGameTableValue(1, this->m_unit->m_unitFieldLevel - 1, rating);
-    float scalar = GetGameTableValue(11, rating + 1, this->m_unit->m_unitFieldBytes0[1] - 1);
+    float scalar = GetGameTableValue(11, rating + 1, this->m_unit->m_unitFieldBytes0.m_class - 1);
 
     if (base == 0.0f || scalar == 0.0f) {
         return 0.0f;
@@ -10864,7 +10864,7 @@ int32_t CGPlayer_C::GetSkillLineForSlot(int32_t hand) {
         }
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spell);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spell);
 
     if (ability && ability->m_spell == spell) {
         return ability->m_skillLine;
@@ -12273,7 +12273,7 @@ int32_t OnUpdateRestState(WOWGUID guid, uint32_t offset, uint32_t count, const v
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_PLAYER, __FILE__, __LINE__));
 
     if (player) {
-        uint32_t state = player->m_player->m_playerBytes2[3];
+        uint32_t state = player->m_player->m_playerBytes1.m_restState;
 
         if (state < 3) {
             if (s_restStateInfo[state].m_error != ERR_MAX_VALUE) {
@@ -13260,7 +13260,7 @@ void CGPlayer_C::SendTextEmote(const EmotesTextRec* emote, WOWGUID target) {
     uint32_t sound;
 
     if (this->m_unit->m_unitFieldNativedisplayid == this->m_unit->m_unitFieldDisplayid) {
-        sound = SI2::GetTextEmoteSoundIndex(emote->m_id, this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[2]);
+        sound = SI2::GetTextEmoteSoundIndex(emote->m_id, this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_gender);
     } else {
         uint32_t sex = this->GetDisplaySex();
         uint32_t race = this->GetDisplayRace();
@@ -13596,7 +13596,7 @@ int32_t CGPlayer_C::GetSpellRank(const SpellRec* spell) const {
         rankSpell = &weaponSpell;
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], spellId);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, spellId);
 
     if (!ability) {
         return 0;
@@ -13622,7 +13622,7 @@ void CGPlayer_C::GetDefenseSkillRank(int32_t& rank, int32_t& bonus) const {
     int32_t defenseSpell = s_defenseSpellId;
     bonus = 0;
     rank = 0;
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], defenseSpell);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, defenseSpell);
 
     if (ability && ability->m_spell == s_defenseSpellId) {
         this->GetExpandedSkillRank(ability->m_skillLine, rank, bonus);
@@ -13655,7 +13655,7 @@ void CGPlayer_C::GetAttackSkillRank(int32_t hand, int32_t& rank, int32_t& bonus)
         }
     }
 
-    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0[0], this->m_unit->m_unitFieldBytes0[1], skillSpell);
+    SkillLineAbilityRec* ability = SpellTableLookupAbility(this->m_unit->m_unitFieldBytes0.m_race, this->m_unit->m_unitFieldBytes0.m_class, skillSpell);
 
     if (ability && ability->m_spell == skillSpell) {
         this->GetExpandedSkillRank(ability->m_skillLine, rank, bonus);
@@ -13794,7 +13794,7 @@ void CGPlayer_C::PlayUnitSound(UNITSOUNDTYPE soundType, int32_t force) {
 
         if (soundType == UNITSOUNDTYPE_WINGFLAP) {
             properties.m_maxAudibleBehavior = 0;
-        } else if (soundType != UNITSOUNDTYPE_STAND && soundType != UNITSOUNDTYPE_UNKNOWN_6 && soundType != UNITSOUNDTYPE_WINGGLIDE && soundType != UNITSOUNDTYPE_JUMPSTART && soundType != UNITSOUNDTYPE_JUMPEND && soundType != UNITSOUNDTYPE_INJURY_FALL && this->m_unit->m_unitFieldBytes0[1] == 6) {
+        } else if (soundType != UNITSOUNDTYPE_STAND && soundType != UNITSOUNDTYPE_UNKNOWN_6 && soundType != UNITSOUNDTYPE_WINGGLIDE && soundType != UNITSOUNDTYPE_JUMPSTART && soundType != UNITSOUNDTYPE_JUMPEND && soundType != UNITSOUNDTYPE_INJURY_FALL && this->m_unit->m_unitFieldBytes0.m_class == 6) {
             properties.m_useDspChain = 1;
             SI2::DK_GetPlayerFilterName(this, properties.m_dspChainName, sizeof(properties.m_dspChainName));
         }
@@ -13804,7 +13804,7 @@ void CGPlayer_C::PlayUnitSound(UNITSOUNDTYPE soundType, int32_t force) {
         properties.ResetToDefaults();
         properties.m_group = group;
 
-        if (soundType != UNITSOUNDTYPE_STAND && soundType != UNITSOUNDTYPE_UNKNOWN_6 && soundType != UNITSOUNDTYPE_WINGFLAP && soundType != UNITSOUNDTYPE_WINGGLIDE && soundType != UNITSOUNDTYPE_JUMPSTART && soundType != UNITSOUNDTYPE_JUMPEND && soundType != UNITSOUNDTYPE_INJURY_FALL && this->m_unit->m_unitFieldBytes0[1] == 6) {
+        if (soundType != UNITSOUNDTYPE_STAND && soundType != UNITSOUNDTYPE_UNKNOWN_6 && soundType != UNITSOUNDTYPE_WINGFLAP && soundType != UNITSOUNDTYPE_WINGGLIDE && soundType != UNITSOUNDTYPE_JUMPSTART && soundType != UNITSOUNDTYPE_JUMPEND && soundType != UNITSOUNDTYPE_INJURY_FALL && this->m_unit->m_unitFieldBytes0.m_class == 6) {
             properties.m_useDspChain = 1;
             SI2::DK_GetPlayerFilterName(this, properties.m_dspChainName, sizeof(properties.m_dspChainName));
         }
@@ -14406,11 +14406,11 @@ void CGPlayer_C::FillPartyMemberState(CGPartyMemberState* state) {
         state->m_flags = 9;
     }
 
-    if (this->m_unit->m_unitFieldBytes2[1] & 0x1) {
+    if (this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x1) {
         state->m_flags |= 0x2;
     }
 
-    if (this->m_unit->m_unitFieldBytes2[1] & 0x4) {
+    if (this->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x4) {
         state->m_flags |= 0x10;
     }
 
@@ -14436,7 +14436,7 @@ void CGPlayer_C::FillPartyMemberState(CGPartyMemberState* state) {
 
     state->m_health = this->m_unit->m_unitFieldHealth;
     state->m_maxHealth = this->m_unit->m_unitFieldMaxhealth;
-    uint8_t powerType = this->m_unit->m_unitFieldBytes0[3];
+    uint8_t powerType = this->m_unit->m_unitFieldBytes0.m_powerType;
     state->m_powerType = powerType;
     state->m_power = this->m_unit->m_unitFieldPower[powerType];
     state->m_maxPower = this->m_unit->m_unitFieldMaxpower[powerType];

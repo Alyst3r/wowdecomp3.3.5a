@@ -786,10 +786,10 @@ static int32_t SpellParserReplaceText(const SpellRec* spell, char* buffer, uint3
                 return 0;
             }
 
-            int32_t gender = player->m_unit->m_unitFieldBytes0[2];
+            int32_t gender = player->m_unit->m_unitFieldBytes0.m_gender;
 
             if (gender == 2) {
-                gender = player->m_player->m_playerBytes3[0];
+                gender = player->m_player->m_playerBytes2.m_gender;
             }
 
             GenderConditional(buffer, size, gender, player, nullptr, cursor);
@@ -1286,10 +1286,10 @@ bool QuestParserParseToken(char* buffer, uint32_t size, const NameCache* record,
                 (*cursor)++;
             }
 
-            int32_t gender = unit ? unit->m_unit->m_unitFieldBytes0[2] : record->m_sex;
+            int32_t gender = unit ? unit->m_unit->m_unitFieldBytes0.m_gender : record->m_sex;
 
             if (gender == 2 && unit && const_cast<CGUnit_C*>(unit)->IsActivePlayer()) {
-                gender = static_cast<const CGPlayer_C*>(unit)->m_player->m_playerBytes3[0];
+                gender = static_cast<const CGPlayer_C*>(unit)->m_player->m_playerBytes2.m_gender;
             }
 
             GenderConditional(buffer, size, gender, unit, record, cursor);
@@ -1396,7 +1396,7 @@ bool QuestParserParseToken(char* buffer, uint32_t size, const NameCache* record,
                     }
                 }
 
-                gender = unit->m_unit->m_unitFieldBytes0[2];
+                gender = unit->m_unit->m_unitFieldBytes0.m_gender;
             } else {
                 gender = record->m_sex;
             }
