@@ -103,6 +103,11 @@
 #include "WoW/Source/Object/ObjectClient/Object_C.h"
 #include "WoW/Source/Game/GameClient/ProjectTex.h"
 
+static const float dirLightScaleAmount = 0.5f;
+
+static const int32_t MAX_SOUND_EXT_LEVEL = 9999;
+static const int32_t MIN_SOUND_EXT_LEVEL = 2;
+
 // STATIC: 0x00ADEED8
 static float s_preloadX = 3.4028235e38f;
 

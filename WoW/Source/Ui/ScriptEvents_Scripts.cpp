@@ -4469,7 +4469,7 @@ int32_t Script_GetShapeshiftFormID(lua_State* L)
         return 1;
     }
 
-    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!activePlayer)
     {
@@ -4492,7 +4492,7 @@ int32_t Script_PortGraveyard(lua_State* L)
         return 0;
     }
 
-    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGPlayer_C* activePlayer = reinterpret_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!activePlayer)
     {

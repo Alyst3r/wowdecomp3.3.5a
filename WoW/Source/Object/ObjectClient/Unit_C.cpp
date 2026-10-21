@@ -15768,15 +15768,15 @@ bool CGUnit_C::HasDispellableAura(int32_t dispelType, int32_t harmful, bool mech
         if (charmed) {
             bool charm = false;
 
-            if ((spell.m_effect[0] == SPELL_AURA_MOD_CHARM || spell.m_effect[0] == SPELL_AURA_AOE_CHARM || spell.m_effect[0] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x1)) {
+            if ((spell.m_effectAura[0] == SPELL_AURA_MOD_CHARM || spell.m_effectAura[0] == SPELL_AURA_AOE_CHARM || spell.m_effectAura[0] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x1)) {
                 charm = true;
             }
 
-            if ((spell.m_effect[1] == SPELL_AURA_MOD_CHARM || spell.m_effect[1] == SPELL_AURA_AOE_CHARM || spell.m_effect[1] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x2)) {
+            if ((spell.m_effectAura[1] == SPELL_AURA_MOD_CHARM || spell.m_effectAura[1] == SPELL_AURA_AOE_CHARM || spell.m_effectAura[1] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x2)) {
                 charm = true;
             }
 
-            if ((spell.m_effect[2] == SPELL_AURA_MOD_CHARM || spell.m_effect[2] == SPELL_AURA_AOE_CHARM || spell.m_effect[2] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x4)) {
+            if ((spell.m_effectAura[2] == SPELL_AURA_MOD_CHARM || spell.m_effectAura[2] == SPELL_AURA_AOE_CHARM || spell.m_effectAura[2] == SPELL_AURA_MOD_POSSESS) && (this->m_auras[i].m_flags & 0x4)) {
                 charm = true;
             }
 

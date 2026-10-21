@@ -2429,7 +2429,7 @@ static int32_t Script_GetInstanceInfo(lua_State* L) {
 // OFFSET: 0x0051B8B0
 static int32_t Script_GetRestState(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
-    ExhaustionRec* rec = player ? g_exhaustionDB.GetRecord(player->m_player->>m_playerBytes1.m_restState) : nullptr;
+    ExhaustionRec* rec = player ? g_exhaustionDB.GetRecord(player->m_player->m_playerBytes1.m_restState) : nullptr;
 
     if (!rec) {
         lua_pushnil(L);
