@@ -3166,9 +3166,9 @@ bool CGGameObject_C_TypeBase::CanUse() const {
                 return false;
             }
 
-            bool ffa = (creator->m_unit->m_unitFieldBytes2[1] & 0x4) && (!CGPartyInfo::InParty() || (!CGPartyInfo::IsMember(creator->m_obj->m_guid) && !IsGuidInMyRaid(creator->m_obj->m_guid)));
+            bool ffa = (creator->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x4) && (!CGPartyInfo::InParty() || (!CGPartyInfo::IsMember(creator->m_obj->m_guid) && !IsGuidInMyRaid(creator->m_obj->m_guid)));
 
-            if (!(creator->m_unit->m_unitFieldBytes2[1] & 0x1) && !creator->IsDuelingWith(player) && !ffa) {
+            if (!(creator->m_unit->m_unitFieldBytes2.m_pvpFlag & 0x1) && !creator->IsDuelingWith(player) && !ffa) {
                 return false;
             }
         }

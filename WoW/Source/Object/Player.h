@@ -8,6 +8,30 @@
 
 class CGPlayerLocalData;
 
+struct PlayerBytes0
+{
+    uint8_t m_skinID;    
+    uint8_t m_faceID;
+    uint8_t m_hairStyleID;
+    uint8_t m_hairColorID;
+};
+
+struct PlayerBytes1
+{
+    uint8_t m_facialStyle;
+    uint8_t m_partyType;
+    uint8_t m_bankBagSlots;
+    uint8_t m_restState;
+};
+
+struct PlayerBytes2
+{
+    uint8_t m_gender;
+    uint8_t m_inebriation;
+    uint8_t m_pvpTitle;
+    uint8_t m_arenaFaction;
+};
+
 struct PlayerQuestLogEntry {
     /* 0000 */ uint32_t m_questId;
     /* 0004 */ uint32_t m_state;
@@ -52,9 +76,9 @@ class CGPlayerData {
     /* 0008 */ uint32_t m_playerFlags;
     /* 000C */ uint32_t m_playerGuildid;
     /* 0010 */ uint32_t m_playerGuildrank;
-    /* 0014 */ uint8_t m_playerBytes [4];
-    /* 0018 */ uint8_t m_playerBytes2 [4];
-    /* 001C */ uint8_t m_playerBytes3 [4];
+    /* 0014 */ PlayerBytes0 m_playerBytes0;
+    /* 0018 */ PlayerBytes1 m_playerBytes1;
+    /* 001C */ PlayerBytes2 m_playerBytes2;
     /* 0020 */ uint32_t m_playerDuelTeam;
     /* 0024 */ uint32_t m_playerGuildTimestamp;
     /* 0028 */ PlayerQuestLogEntry m_playerQuestLog [25];
@@ -98,7 +122,7 @@ class CGPlayerLocalData : public CGPlayerData {
     /* 0FF8 */ uint32_t m_playerFieldCoinage;
     /* 0FFC */ uint32_t m_playerFieldModDamageDonePos [7];
     /* 1018 */ uint32_t m_playerFieldModDamageDoneNeg [7];
-    /* 1034 */ uint32_t m_playerFieldModDamageDonePct [7];
+    /* 1034 */ float m_playerFieldModDamageDonePct [7];
     /* 1050 */ uint32_t m_playerFieldModHealingDonePos;
     /* 1054 */ float m_playerFieldModHealingPct;
     /* 1058 */ float m_playerFieldModHealingDonePct;

@@ -619,7 +619,7 @@ void CGSpellBook::AddKnownSpell(int32_t spellId, int32_t notify, int32_t replace
         SkillLineAbilityRec* ability = player->LookupAbility(spellId);
 
         if (ability) {
-            const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0[0], player->m_unit->m_unitFieldBytes0[1], ability->m_skillLine);
+            const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0.m_race, player->m_unit->m_unitFieldBytes0.m_class, ability->m_skillLine);
 
             if (info && !(info->m_flags & 0x80)) {
                 skillLine = info->m_skillID;
@@ -810,7 +810,7 @@ void CGSpellBook::UpdateSpells(int32_t a1, int32_t a2, int32_t a3) {
 // VERIFY: 5c7e305b manual
 // OFFSET: 0x0053B970
 int32_t GetActionBarPageOffset(const CGPlayer_C* player, const SpellRec* spell) {
-    uint8_t classId = player->m_unit->m_unitFieldBytes0[1];
+    uint8_t classId = player->m_unit->m_unitFieldBytes0.m_class;
 
     if (classId != 1 && classId != 4 && classId != 11) {
         return 0;
@@ -1161,7 +1161,7 @@ static uint32_t GetSpellSkillInfoIndex(int32_t spellId) {
         SkillLineAbilityRec* ability = player->LookupAbility(spellId);
 
         if (ability) {
-            const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0[0], player->m_unit->m_unitFieldBytes0[1], ability->m_skillLine);
+            const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0.m_race, player->m_unit->m_unitFieldBytes0.m_class, ability->m_skillLine);
 
             if (info && !(info->m_flags & 0x80)) {
                 skillLine = info->m_skillID;
@@ -2277,7 +2277,7 @@ void CGSpellBook::DelKnownSpell(int32_t spellId, int32_t notify) {
             SkillLineAbilityRec* ability = player->LookupAbility(spellId);
 
             if (ability) {
-                const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0[0], player->m_unit->m_unitFieldBytes0[1], ability->m_skillLine);
+                const SkillRaceClassInfoRec* info = SpellTableLookupInfo(player->m_unit->m_unitFieldBytes0.m_race, player->m_unit->m_unitFieldBytes0.m_class, ability->m_skillLine);
 
                 if (info && info->m_flags >= 0) {
                     skillLine = info->m_skillID;

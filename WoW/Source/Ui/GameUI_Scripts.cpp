@@ -1281,7 +1281,7 @@ static int32_t Script_GetDamageBonusStat(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     const ChrClassesRec* rec;
 
-    if (player && (rec = g_chrClassesDB.GetRecord(player->m_unit->m_unitFieldBytes0[1]))) {
+    if (player && (rec = g_chrClassesDB.GetRecord(player->m_unit->m_unitFieldBytes0.m_class))) {
         lua_pushnumber(L, rec->m_damageBonusStat + 1);
         return 1;
     }
@@ -2429,7 +2429,7 @@ static int32_t Script_GetInstanceInfo(lua_State* L) {
 // OFFSET: 0x0051B8B0
 static int32_t Script_GetRestState(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
-    ExhaustionRec* rec = player ? g_exhaustionDB.GetRecord(player->m_player->m_playerBytes2[3]) : nullptr;
+    ExhaustionRec* rec = player ? g_exhaustionDB.GetRecord(player->m_player->>m_playerBytes1.m_restState) : nullptr;
 
     if (!rec) {
         lua_pushnil(L);
@@ -2450,7 +2450,7 @@ static int32_t Script_GetXPExhaustion(lua_State* L) {
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     ExhaustionRec* rested = g_exhaustionDB.GetRecord(1);
 
-    if (!player || player->m_player->m_playerBytes2[3] != 1) {
+    if (!player || player->m_player->m_playerBytes1.m_restState != 1) {
         lua_pushnil(L);
         return 1;
     }
@@ -2990,7 +2990,7 @@ static int32_t Script_GetTitleName(lua_State* L) {
 
     int32_t maskId = static_cast<int32_t>(lua_tonumber(L, 1));
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
-    int32_t gender = player ? player->m_player->m_playerBytes3[0] : 0;
+    int32_t gender = player ? player->m_player->m_playerBytes2.m_gender : 0;
     char title[256];
     title[0] = 0;
     CharTitlesRec* rec = nullptr;
@@ -3055,7 +3055,7 @@ static int32_t Script_SitStandOrDescendStart(lua_State* L) {
         return 0;
     }
 
-    if (!player->m_unit->m_unitFieldBytes1[0]) {
+    if (!player->m_unit->m_unitFieldBytes1.m_standState) {
         player->ChangeStandState(UNIT_SITTING);
     } else {
         player->ChangeStandState(UNIT_STANDING);

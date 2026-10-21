@@ -6428,7 +6428,7 @@ void Spell_C_SpellFailed(PendingSpellCast* cast, const SpellRec* spell, int32_t 
                 return;
             }
 
-            uint32_t powerType = player->m_unit->m_unitFieldBytes0[3];
+            uint32_t powerType = player->m_unit->m_unitFieldBytes0.m_powerType;
 
             if (powerType > POWER_TYPE_RUNIC_POWER) {
                 Spell_C_FailPendingCast(cast, spell, 27);
@@ -8416,7 +8416,7 @@ bool Spell_C_CastSpell(CGUnit_C* caster, int32_t spellId, const CGItem_C* item, 
         }
 
         if (noComboPoints && !unit->IgnoresAuraState(&spell)) {
-            Spell_C_SpellFailed(cast, &spell, unit->m_unit->m_unitFieldBytes0[1] == 1 ? SPELL_FAILED_CASTER_AURASTATE : SPELL_FAILED_NO_COMBO_POINTS, -1, -1, false);
+            Spell_C_SpellFailed(cast, &spell, unit->m_unit->m_unitFieldBytes0.m_class == 1 ? SPELL_FAILED_CASTER_AURASTATE : SPELL_FAILED_NO_COMBO_POINTS, -1, -1, false);
             return false;
         }
     }
