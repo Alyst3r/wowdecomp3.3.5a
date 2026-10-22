@@ -103,15 +103,30 @@ static int32_t Script_GetReadyCheckTimeLeft(lua_State* L) {
     return 1;
 }
 
-// VERIFY: c4260696 manual
 // OFFSET: 0x00574A00
 static int32_t Script_ConvertToRaid(lua_State* L) {
-    if (CGPartyInfo::m_members[0] && CGPartyInfo::m_leader == ClntObjMgrGetActivePlayer()) {
-        CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
-
-        if (player && static_cast<int32_t>(player->m_unit->m_unitFieldLevel) >= 10) {
+    if ((CGPartyInfo::m_members[0] || CGRaidInfo::m_numMembers) && CGPartyInfo::m_leader == ClntObjMgrGetActivePlayer()) {
+        if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__) && CGPartyInfo::m_members[0]) {
             CDataStore msg;
             msg.Put(static_cast<uint32_t>(CMSG_GROUP_RAID_CONVERT));
+            msg.Put(static_cast<uint8_t>(1));
+            msg.Finalize();
+            ClientServices::Send2(&msg);
+        }
+    }
+
+    return 0;
+}
+
+static int32_t Script_ConvertToParty(lua_State* L)
+{
+    if ((CGPartyInfo::m_members[0] || CGRaidInfo::m_numMembers) && CGPartyInfo::m_leader == ClntObjMgrGetActivePlayer())
+    {
+        if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__) && CGRaidInfo::m_numMembers)
+        {
+            CDataStore msg;
+            msg.Put(static_cast<uint32_t>(CMSG_GROUP_RAID_CONVERT));
+            msg.Put(static_cast<uint8_t>(0));
             msg.Finalize();
             ClientServices::Send2(&msg);
         }
@@ -618,6 +633,7 @@ static FrameScript_Method s_ScriptFunctions[] = {
     { "SetRaidSubgroup", &Script_SetRaidSubgroup },
     { "SwapRaidSubgroup", &Script_SwapRaidSubgroup },
     { "ConvertToRaid", &Script_ConvertToRaid },
+    { "ConvertToParty", &Script_ConvertToParty },
     { "PromoteToLeader", &Script_PromoteToLeader },
     { "PromoteToAssistant", &Script_PromoteToAssistant },
     { "DemoteAssistant", &Script_DemoteAssistant },
