@@ -16,7 +16,7 @@ public:
     /* 0000 */ int32_t m_id = -1;
     /* 0004 */ int32_t m_name = -1; // just padding, in editor this is used as comment to make dbc file more readable
     /* 0008 */ int32_t m_mapID = -1;
-    /* 000C */ int32_t m_lightID = -1;
+    /* 000C */ int32_t m_flags = -1;
 
     OcclusionVolumeRec();
     ~OcclusionVolumeRec();

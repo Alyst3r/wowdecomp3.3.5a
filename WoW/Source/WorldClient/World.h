@@ -91,7 +91,10 @@ class CSortEntry {
 struct OcclusionVolumeData {
     /* 0000 */ CAaBox m_bounds;
     /* 0018 */ C3Vector* m_positions;
-    /* 001C */ uint32_t m_positionCount;
+    /* 001C */ uint32_t m_positionCount = 0;
+
+    OcclusionVolumeData();
+    ~OcclusionVolumeData();
 };
 
 struct WorldOccluderData {

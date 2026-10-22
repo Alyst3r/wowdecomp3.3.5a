@@ -7,7 +7,8 @@ ZoneLight::ZoneLight()
 
 ZoneLight::~ZoneLight()
 {
-    if (this->m_points) {
+    if (this->m_points)
+    {
         SMemFree(this->m_points, __FILE__, __LINE__, 0);
     }
 }

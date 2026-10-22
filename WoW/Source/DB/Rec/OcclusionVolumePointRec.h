@@ -14,7 +14,7 @@ public:
     static const bool s_generatedID = false;
 
     /* 0000 */ int32_t m_id = -1;
-    /* 0004 */ int32_t m_zoneLightID = -1;
+    /* 0004 */ int32_t m_occlusionID = -1;
     /* 0008 */ float m_positionX = 0.f;
     /* 000C */ float m_positionY = 0.f;
     /* 0010 */ float m_positionZ = 0.f;
