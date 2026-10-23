@@ -89,6 +89,7 @@
 #include <cfloat>
 #include <cmath>
 #include "WoW/Source/Ui/SpellBookFrame.h"
+#include "Engine/Source/ShaderEffect/Types.h"
 
 // STATIC: 0x009F9864
 static const CURSORMODE s_skinCursorModes[2] = { SKIN_ALLIANCE_CURSOR, SKIN_HORDE_CURSOR };
@@ -1140,11 +1141,11 @@ int32_t CGWorldFrame::HitTest(const C3Vector& start, const C3Vector& end, uint32
         result->m_distance = objectDistance;
         result->m_point = point;
         result->m_guid = model;
-        return 2;
+        return HIT_OBJECT;
     }
 
     if (!hitWorld) {
-        return 0;
+        return HIT_NONE;
     }
 
     if (collision) {
@@ -1163,7 +1164,7 @@ int32_t CGWorldFrame::HitTest(const C3Vector& start, const C3Vector& end, uint32
         }
 
         result->m_distance = t;
-        return 3;
+        return HIT_WORLD_OBJECT;
     }
 
     result->m_point = point;
@@ -1176,7 +1177,7 @@ int32_t CGWorldFrame::HitTest(const C3Vector& start, const C3Vector& end, uint32
 // OFFSET: 0x004F9DA0
 int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* result) {
     if (!(CGInputControl::GetActive()->m_mouseModeFlags & 0x1)) {
-        return 0;
+        return HIT_NONE;
     }
 
     CGxDevice* device = g_theGxDevicePtr;
@@ -1187,7 +1188,7 @@ int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* 
     view = stack.m_mtx[stack.m_level];
     this->m_camera->SetupWorldProjection(this->m_viewportDDC);
 
-    int32_t kind = 0;
+    int32_t kind = HIT_NONE;
     uint32_t flags = this->GetHitTestFilterFlags(a3);
 
     if (flags) {
@@ -1199,7 +1200,7 @@ int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* 
             result->m_segEnd = end;
             kind = this->HitTest(start, end, flags, result);
 
-            if (kind >= 2) {
+            if (kind >= HIT_OBJECT) {
                 this->m_hitGuid = result->m_guid;
             } else {
                 this->MoveToFreeList(&this->m_hitModelList);
@@ -1540,10 +1541,10 @@ static void DrawSpellCursorShadow(uint32_t a1) {
     GxUpdateAlphaRef(GxRs_AlphaRef);
     g_theGxDevicePtr->RsSet(GxRs_Texture0, texture);
     g_theGxDevicePtr->RsSet(GxRs_Texture1, ProjectTex2dGetAddFadeTex());
-    GxRsSet(GxRs_ColorOp0, 0);
-    GxRsSet(GxRs_AlphaOp0, 0);
-    GxRsSet(GxRs_ColorOp1, 0);
-    GxRsSet(GxRs_AlphaOp1, 0);
+    GxRsSet(GxRs_ColorOp0, GxTexOp_Mod);
+    GxRsSet(GxRs_AlphaOp0, GxTexOp_Mod);
+    GxRsSet(GxRs_ColorOp1, GxTexOp_Mod);
+    GxRsSet(GxRs_AlphaOp1, GxTexOp_Mod);
 
     CImVector color;
     color.b = 0xFF;
@@ -1868,7 +1869,7 @@ void CGWorldFrame::OnLayerUpdate(float elapsedSec) {
         }
 
         if (CGNamePlateFrame::GetNamePlateFocus()) {
-            kind = 2;
+            kind = HIT_OBJECT;
             hit.m_guid = CGNamePlateFrame::GetNamePlateFocus()->m_guid;
         } else {
             kind = this->HitTestPoint(ddc.x, ddc.y, 1, &hit);
@@ -1896,7 +1897,7 @@ void CGWorldFrame::OnLayerUpdate(float elapsedSec) {
             const char* token = lua_tolstring(L, -1, nullptr);
 
             if (token && !lua_tainted && Script_GetGUIDFromToken(token, hit.m_guid, false)) {
-                kind = 2;
+                kind = HIT_OBJECT;
             }
         }
 
@@ -1914,7 +1915,7 @@ void CGWorldFrame::OnLayerUpdate(float elapsedSec) {
     s_spellShadowStyle = SPELL_NONE;
 
     switch (kind) {
-        case 0:
+        case HIT_NONE:
             if (Spell_C_IsTargeting()) {
                 CursorSetMode(CAST_ERROR_CURSOR);
             } else {
@@ -1924,15 +1925,15 @@ void CGWorldFrame::OnLayerUpdate(float elapsedSec) {
             this->HandleSpriteTrack(WOWGUID());
             break;
 
-        case 1:
+        case HIT_GROUND:
             this->OnLayerTrackTerrain(hit);
             break;
 
-        case 2:
+        case HIT_OBJECT:
             this->OnLayerTrackObject(hit);
             break;
 
-        case 3: {
+        case HIT_WORLD_OBJECT: {
             CGGameObject_C* gameObject = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(hit.m_guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
             if (!gameObject || gameObject->m_gameObject->m_typeID != 33 || Spell_C_CanTargetTerrain()) {
@@ -2167,7 +2168,7 @@ void CGWorldFrame::PerformDefaultAction(MOUSEBUTTON button) {
     }
 
     switch (this->m_defaultActionHitKind) {
-        case 0: {
+        case HIT_NONE: {
             CWorldClickEvent evt;
             evt.m_segStart = this->m_defaultActionHit.m_segStart;
             evt.m_segEnd = this->m_defaultActionHit.m_segEnd;
@@ -2176,8 +2177,8 @@ void CGWorldFrame::PerformDefaultAction(MOUSEBUTTON button) {
             break;
         }
 
-        case 1:
-        case 3: {
+        case HIT_GROUND:
+        case HIT_WORLD_OBJECT: {
             CTerrainClickEvent evt;
             uint32_t high = static_cast<uint32_t>(this->m_defaultActionHit.m_guid.m_guid >> 32);
 
@@ -2193,7 +2194,7 @@ void CGWorldFrame::PerformDefaultAction(MOUSEBUTTON button) {
             break;
         }
 
-        case 2: {
+        case HIT_OBJECT: {
             CSpriteClickEvent evt;
             evt.m_guid = this->m_defaultActionHit.m_guid;
             evt.m_button = button;
